@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { adminsTable, usersTable, templatesTable } from "@workspace/db/schema";
+import { adminsTable, usersTable, templatesTable } from "@workspace/db";
 import { eq, count } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/auth.js";
 
@@ -40,7 +40,7 @@ router.post("/admin/users", requireAdmin, async (req, res) => {
 });
 
 router.delete("/admin/users/:discordId", requireAdmin, async (req, res) => {
-  const { discordId } = req.params;
+  const discordId = String(req.params.discordId);
 
   await db.delete(adminsTable).where(eq(adminsTable.discordId, discordId));
   res.json({ success: true });

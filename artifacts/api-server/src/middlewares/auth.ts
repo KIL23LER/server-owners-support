@@ -1,7 +1,7 @@
 import { type Request, type Response, type NextFunction } from "express";
 import { db } from "@workspace/db";
-import { sessionsTable, adminsTable } from "@workspace/db/schema";
-import { eq, gt } from "drizzle-orm";
+import { sessionsTable, adminsTable, usersTable } from "@workspace/db";
+import { eq, gt, and } from "drizzle-orm";
 
 export interface AuthUser {
   discordId: string;
@@ -19,77 +19,87 @@ declare global {
   }
 }
 
-export async function requireAuth(req: Request, res: Response, next: NextFunction) {
-  const token = req.headers.authorization?.replace("Bearer ", "") || req.headers["x-session-token"] as string;
+async function getSessionUser(token: string): Promise<AuthUser | null> {
+  const now = new Date();
 
+  const rows = await db
+    .select()
+    .from(sessionsTable)
+    .innerJoin(usersTable, eq(sessionsTable.discordId, usersTable.discordId))
+    .where(and(eq(sessionsTable.token, token), gt(sessionsTable.expiresAt, now)))
+    .limit(1);
+
+  if (!rows[0]) return null;
+
+  const { users: user } = rows[0];
+
+  const admin = await db
+    .select()
+    .from(adminsTable)
+    .where(eq(adminsTable.discordId, user.discordId))
+    .limit(1);
+
+  return {
+    discordId: user.discordId,
+    username: user.username,
+    globalName: user.globalName,
+    avatar: user.avatar,
+    isAdmin: admin.length > 0,
+  };
+}
+
+function extractToken(req: Request): string | null {
+  const auth = req.headers.authorization;
+  if (auth?.startsWith("Bearer ")) return auth.slice(7);
+  const header = req.headers["x-session-token"];
+  if (typeof header === "string") return header;
+  return null;
+}
+
+export async function requireAuth(req: Request, res: Response, next: NextFunction) {
+  const token = extractToken(req);
   if (!token) {
     res.status(401).json({ error: "غير مصرح" });
     return;
   }
 
-  const now = new Date();
-  const session = await db.query.sessionsTable.findFirst({
-    where: (s) => eq(s.token, token) && gt(s.expiresAt, now),
-    with: { user: true },
-  });
-
-  if (!session) {
+  const user = await getSessionUser(token);
+  if (!user) {
     res.status(401).json({ error: "جلسة غير صالحة أو منتهية" });
     return;
   }
 
-  const admin = await db.query.adminsTable.findFirst({
-    where: eq(adminsTable.discordId, session.user.discordId),
-  });
-
-  req.user = {
-    discordId: session.user.discordId,
-    username: session.user.username,
-    globalName: session.user.globalName,
-    avatar: session.user.avatar,
-    isAdmin: !!admin,
-  };
-
+  req.user = user;
   next();
 }
 
 export async function requireAdmin(req: Request, res: Response, next: NextFunction) {
-  await requireAuth(req, res, async () => {
-    if (!req.user?.isAdmin) {
-      res.status(403).json({ error: "يجب أن تكون أدمن" });
-      return;
-    }
-    next();
-  });
-}
-
-export async function optionalAuth(req: Request, res: Response, next: NextFunction) {
-  const token = req.headers.authorization?.replace("Bearer ", "") || req.headers["x-session-token"] as string;
-
+  const token = extractToken(req);
   if (!token) {
-    next();
+    res.status(401).json({ error: "غير مصرح" });
     return;
   }
 
-  const now = new Date();
-  const session = await db.query.sessionsTable.findFirst({
-    where: (s) => eq(s.token, token) && gt(s.expiresAt, now),
-    with: { user: true },
-  });
-
-  if (session) {
-    const admin = await db.query.adminsTable.findFirst({
-      where: eq(adminsTable.discordId, session.user.discordId),
-    });
-
-    req.user = {
-      discordId: session.user.discordId,
-      username: session.user.username,
-      globalName: session.user.globalName,
-      avatar: session.user.avatar,
-      isAdmin: !!admin,
-    };
+  const user = await getSessionUser(token);
+  if (!user) {
+    res.status(401).json({ error: "جلسة غير صالحة أو منتهية" });
+    return;
   }
 
+  if (!user.isAdmin) {
+    res.status(403).json({ error: "يجب أن تكون أدمن" });
+    return;
+  }
+
+  req.user = user;
+  next();
+}
+
+export async function optionalAuth(req: Request, res: Response, next: NextFunction) {
+  const token = extractToken(req);
+  if (token) {
+    const user = await getSessionUser(token);
+    if (user) req.user = user;
+  }
   next();
 }

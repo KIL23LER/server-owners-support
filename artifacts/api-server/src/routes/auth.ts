@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { usersTable, sessionsTable, adminsTable } from "@workspace/db/schema";
+import { usersTable, sessionsTable, adminsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { randomBytes } from "crypto";
 import { requireAuth } from "../middlewares/auth.js";

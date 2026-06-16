@@ -1,42 +1,41 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { templatesTable } from "@workspace/db/schema";
+import { templatesTable } from "@workspace/db";
 import { eq, desc } from "drizzle-orm";
-import { requireAuth, requireAdmin } from "../middlewares/auth.js";
+import { requireAdmin } from "../middlewares/auth.js";
 
 const router = Router();
 
 router.get("/templates", async (req, res) => {
   const { category, featured } = req.query;
 
-  let query = db.select().from(templatesTable).orderBy(desc(templatesTable.createdAt));
+  let templates = await db
+    .select()
+    .from(templatesTable)
+    .orderBy(desc(templatesTable.createdAt));
 
-  const templates = await query;
-
-  let result = templates;
   if (category && typeof category === "string") {
-    result = result.filter((t) => t.category === category);
+    templates = templates.filter((t) => t.category === category);
   }
   if (featured === "true") {
-    result = result.filter((t) => t.featured);
+    templates = templates.filter((t) => t.featured);
   }
 
-  res.json(result.map((t) => ({
-    ...t,
-    createdAt: t.createdAt.toISOString(),
-  })));
+  res.json(templates.map((t) => ({ ...t, createdAt: t.createdAt.toISOString() })));
 });
 
 router.get("/templates/:id", async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(String(req.params.id));
   if (isNaN(id)) {
     res.status(400).json({ error: "معرف غير صالح" });
     return;
   }
 
-  const template = await db.query.templatesTable.findFirst({
-    where: eq(templatesTable.id, id),
-  });
+  const [template] = await db
+    .select()
+    .from(templatesTable)
+    .where(eq(templatesTable.id, id))
+    .limit(1);
 
   if (!template) {
     res.status(404).json({ error: "القالب غير موجود" });
@@ -47,42 +46,60 @@ router.get("/templates/:id", async (req, res) => {
 });
 
 router.post("/templates", requireAdmin, async (req, res) => {
-  const { name, description, imageUrl, templateCode, category, featured } = req.body;
+  const { name, description, imageUrl, templateCode, category, featured } = req.body as {
+    name: string;
+    description: string;
+    imageUrl?: string;
+    templateCode: string;
+    category: string;
+    featured?: boolean;
+  };
 
   if (!name || !description || !templateCode || !category) {
     res.status(400).json({ error: "الحقول المطلوبة ناقصة" });
     return;
   }
 
-  const [template] = await db.insert(templatesTable).values({
-    name,
-    description,
-    imageUrl: imageUrl || null,
-    templateCode: templateCode.replace("https://discord.new/", "").trim(),
-    category,
-    featured: featured ?? false,
-    createdBy: req.user!.discordId,
-  }).returning();
+  const [template] = await db
+    .insert(templatesTable)
+    .values({
+      name,
+      description,
+      imageUrl: imageUrl || null,
+      templateCode: templateCode.replace("https://discord.new/", "").trim(),
+      category,
+      featured: featured ?? false,
+      createdBy: req.user!.discordId,
+    })
+    .returning();
 
   res.status(201).json({ ...template, createdAt: template.createdAt.toISOString() });
 });
 
 router.put("/templates/:id", requireAdmin, async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(String(req.params.id));
   if (isNaN(id)) {
     res.status(400).json({ error: "معرف غير صالح" });
     return;
   }
 
-  const { name, description, imageUrl, templateCode, category, featured } = req.body;
+  const { name, description, imageUrl, templateCode, category, featured } = req.body as {
+    name?: string;
+    description?: string;
+    imageUrl?: string | null;
+    templateCode?: string;
+    category?: string;
+    featured?: boolean;
+  };
 
-  const [updated] = await db.update(templatesTable)
+  const [updated] = await db
+    .update(templatesTable)
     .set({
-      ...(name && { name }),
-      ...(description && { description }),
+      ...(name !== undefined && { name }),
+      ...(description !== undefined && { description }),
       ...(imageUrl !== undefined && { imageUrl }),
-      ...(templateCode && { templateCode: templateCode.replace("https://discord.new/", "").trim() }),
-      ...(category && { category }),
+      ...(templateCode !== undefined && { templateCode: templateCode.replace("https://discord.new/", "").trim() }),
+      ...(category !== undefined && { category }),
       ...(featured !== undefined && { featured }),
       updatedAt: new Date(),
     })
@@ -98,7 +115,7 @@ router.put("/templates/:id", requireAdmin, async (req, res) => {
 });
 
 router.delete("/templates/:id", requireAdmin, async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(String(req.params.id));
   if (isNaN(id)) {
     res.status(400).json({ error: "معرف غير صالح" });
     return;
