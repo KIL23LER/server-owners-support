@@ -1,0 +1,12 @@
+node_modules
+.git
+dist
+.cache
+*.tsbuildinfo
+.local
+attached_assets
+screenshots
+coverage
+*.log
+*.map
+artifacts/mockup-sandbox

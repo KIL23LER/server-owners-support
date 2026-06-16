@@ -1,0 +1,26 @@
+{
+  "buildCommand": "PORT=3000 BASE_PATH=/ pnpm --filter @workspace/sos-website run build",
+  "outputDirectory": "artifacts/sos-website/dist/public",
+  "installCommand": "pnpm install",
+  "framework": null,
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://4c5f5398-e202-4462-bde6-09922e99482e-00-5s3vfoflqh2n.spock.replit.dev/api/:path*"
+    },
+    {
+      "source": "/((?!assets|favicon).*)",
+      "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "X-XSS-Protection", "value": "1; mode=block" }
+      ]
+    }
+  ]
+}
