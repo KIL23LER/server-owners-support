@@ -110,13 +110,17 @@ function TemplateCard({ template }: { template: Template }) {
   const { user, login } = useAuth();
   const [isApplyDialogOpen, setIsApplyDialogOpen] = useState(false);
 
+  const templateUrl = template.templateCode.startsWith("http")
+    ? template.templateCode
+    : `https://discord.new/${template.templateCode}`;
+
   return (
     <Card className="overflow-hidden border-border/60 hover-elevate transition-all duration-300 flex flex-col h-full">
       {template.imageUrl ? (
         <div className="h-40 w-full overflow-hidden bg-muted">
-          <img 
-            src={template.imageUrl} 
-            alt={template.name} 
+          <img
+            src={template.imageUrl}
+            alt={template.name}
             className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
           />
         </div>
@@ -138,25 +142,25 @@ function TemplateCard({ template }: { template: Template }) {
         <p className="text-sm text-muted-foreground line-clamp-2 mb-4 flex-1">
           {template.description}
         </p>
-        
+
         <div className="mt-auto pt-4 border-t border-border/40">
           {!user ? (
             <Button className="w-full" onClick={login}>
-              تسجيل الدخول للتطبيق
+              سجّل دخول لتطبيق القالب
             </Button>
           ) : (
             <Dialog open={isApplyDialogOpen} onOpenChange={setIsApplyDialogOpen}>
               <DialogTrigger asChild>
-                <Button className="w-full">تطبيق القالب</Button>
+                <Button className="w-full">تطبيق على سيرفري</Button>
               </DialogTrigger>
-              <DialogContent dir="rtl">
+              <DialogContent dir="rtl" className="max-w-md">
                 <DialogHeader>
                   <DialogTitle>تطبيق قالب: {template.name}</DialogTitle>
                   <DialogDescription>
-                    اختر السيرفر الذي ترغب بتطبيق هذا القالب عليه.
+                    اضغط على سيرفرك وسيفتح Discord — اختر "Apply to Existing Server" ثم حدد سيرفرك.
                   </DialogDescription>
                 </DialogHeader>
-                <ApplyTemplateForm template={template} />
+                <ApplyTemplateForm template={template} templateUrl={templateUrl} />
               </DialogContent>
             </Dialog>
           )}
@@ -166,61 +170,67 @@ function TemplateCard({ template }: { template: Template }) {
   );
 }
 
-function ApplyTemplateForm({ template }: { template: Template }) {
+function ApplyTemplateForm({ template, templateUrl }: { template: Template; templateUrl: string }) {
   const { data: guilds, isLoading } = useGetMyGuilds({
-    query: {
-      queryKey: ["my-guilds"]
-    }
+    query: { queryKey: ["my-guilds"] }
   });
 
   if (isLoading) {
     return (
-      <div className="space-y-4 py-4">
-        <Skeleton className="h-16 w-full rounded-md" />
-        <Skeleton className="h-16 w-full rounded-md" />
-        <Skeleton className="h-16 w-full rounded-md" />
+      <div className="space-y-3 py-4">
+        <Skeleton className="h-16 w-full rounded-lg" />
+        <Skeleton className="h-16 w-full rounded-lg" />
+        <Skeleton className="h-16 w-full rounded-lg" />
       </div>
     );
   }
 
   if (!guilds || guilds.length === 0) {
     return (
-      <div className="py-8 text-center">
-        <Server className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-        <p className="text-muted-foreground">لا تملك صلاحيات إدارة في أي سيرفر حالياً.</p>
+      <div className="py-8 text-center space-y-4">
+        <Server className="h-12 w-12 text-muted-foreground mx-auto" />
+        <p className="text-muted-foreground">ما عندك سيرفرات بصلاحيات أدمن.</p>
+        <a href={templateUrl} target="_blank" rel="noopener noreferrer">
+          <Button className="w-full">فتح القالب في Discord</Button>
+        </a>
       </div>
     );
   }
 
   return (
-    <div className="space-y-3 py-4 max-h-[60vh] overflow-y-auto pr-2">
-      {guilds.map((guild) => (
-        <a 
-          key={guild.id}
-          href={`https://discord.com/template/${template.templateCode}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-4 p-3 rounded-lg border border-border hover:border-primary hover:bg-primary/5 transition-colors group"
-        >
-          {guild.icon ? (
-            <img 
-              src={`https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.png`}
-              alt={guild.name}
-              className="w-12 h-12 rounded-full"
-            />
-          ) : (
-            <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center font-bold text-lg">
-              {guild.name.charAt(0)}
-            </div>
-          )}
-          <div className="flex-1 font-medium group-hover:text-primary transition-colors">
-            {guild.name}
-          </div>
-          <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
-            تطبيق
-          </Button>
-        </a>
-      ))}
+    <div className="space-y-2 py-2">
+      <p className="text-xs text-muted-foreground mb-3 bg-primary/5 border border-primary/20 rounded-lg p-3">
+        بعد فتح Discord، اختر <strong>"Apply to Existing Server"</strong> واختر سيرفرك من القائمة.
+      </p>
+      <div className="max-h-[50vh] overflow-y-auto space-y-2 pl-1">
+        {guilds.map((guild) => (
+          <a
+            key={guild.id}
+            href={templateUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-3 p-3 rounded-lg border border-border hover:border-primary hover:bg-primary/5 transition-all group"
+          >
+            {guild.icon ? (
+              <img
+                src={`https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.png`}
+                alt={guild.name}
+                className="w-10 h-10 rounded-full flex-shrink-0"
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary flex-shrink-0">
+                {guild.name.charAt(0)}
+              </div>
+            )}
+            <span className="flex-1 font-medium text-sm group-hover:text-primary transition-colors line-clamp-1">
+              {guild.name}
+            </span>
+            <Button size="sm" variant="ghost" className="flex-shrink-0 text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+              فتح
+            </Button>
+          </a>
+        ))}
+      </div>
     </div>
   );
 }
