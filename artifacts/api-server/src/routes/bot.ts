@@ -20,16 +20,38 @@ async function discordRequest(path: string, options: RequestInit = {}) {
   return res;
 }
 
+async function getUserGuilds(accessToken: string): Promise<string[]> {
+  const res = await fetch(`${DISCORD_API}/users/@me/guilds`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!res.ok) return [];
+  const guilds: Array<{ id: string; permissions: string }> = await res.json();
+  return guilds
+    .filter((g) => (BigInt(g.permissions) & 0x8n) === 0x8n)
+    .map((g) => g.id);
+}
+
 router.post("/bot/apply", requireAuth, async (req, res) => {
   if (!BOT_TOKEN) {
     res.status(500).json({ error: "البوت غير مُعدّ في السيرفر" });
     return;
   }
 
-  const { guildId, templateId } = req.body;
+  const { guildId, templateId, accessToken } = req.body;
 
   if (!guildId || !templateId) {
     res.status(400).json({ error: "guildId و templateId مطلوبان" });
+    return;
+  }
+
+  if (!accessToken || typeof accessToken !== "string") {
+    res.status(400).json({ error: "Discord access token مطلوب للتحقق من صلاحيات السيرفر" });
+    return;
+  }
+
+  const adminGuilds = await getUserGuilds(accessToken);
+  if (!adminGuilds.includes(String(guildId))) {
+    res.status(403).json({ error: "ليس لديك صلاحية ADMINISTRATOR في هذا السيرفر" });
     return;
   }
 
@@ -43,7 +65,10 @@ router.post("/bot/apply", requireAuth, async (req, res) => {
   }
 
   const rawCode = template.templateCode.trim();
-  const templateCode = rawCode.replace(/^https?:\/\/discord\.new\//, "").replace(/^https?:\/\/discord\.com\/template\//, "").trim();
+  const templateCode = rawCode
+    .replace(/^https?:\/\/discord\.new\//, "")
+    .replace(/^https?:\/\/discord\.com\/template\//, "")
+    .trim();
 
   const tplRes = await discordRequest(`/guilds/templates/${templateCode}`);
   if (!tplRes.ok) {

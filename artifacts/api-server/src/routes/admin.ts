@@ -14,7 +14,7 @@ router.get("/admin/users", requireAdmin, async (_req, res) => {
   })));
 });
 
-router.post("/admin/users", requireOwner, async (req, res) => {
+router.post("/admin/users", requireAdmin, async (req, res) => {
   const { discordId, isOwner } = req.body;
 
   if (!discordId || typeof discordId !== "string") {
@@ -40,7 +40,7 @@ router.post("/admin/users", requireOwner, async (req, res) => {
   res.status(201).json({ ...admin, createdAt: admin.createdAt.toISOString() });
 });
 
-router.delete("/admin/users/:discordId", requireOwner, async (req, res) => {
+router.delete("/admin/users/:discordId", requireAdmin, async (req, res) => {
   const discordId = String(req.params.discordId);
 
   const target = await db.query.adminsTable.findFirst({
