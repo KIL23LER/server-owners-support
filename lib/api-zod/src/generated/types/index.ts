@@ -10,6 +10,7 @@ export * from './addAdminInput';
 export * from './adminStats';
 export * from './adminUser';
 export * from './authUser';
+export * from './botApplyInput';
 export * from './createTemplateInput';
 export * from './guild';
 export * from './healthStatus';

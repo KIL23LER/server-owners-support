@@ -192,6 +192,19 @@ export const RemoveAdminResponse = zod.object({
 
 
 /**
+ * @summary Apply a template to a Discord guild via bot
+ */
+export const ApplyBotTemplateBody = zod.object({
+  "guildId": zod.string(),
+  "templateId": zod.number()
+})
+
+export const ApplyBotTemplateResponse = zod.object({
+  "success": zod.boolean()
+})
+
+
+/**
  * @summary Get Discord invite link
  */
 export const GetInviteResponse = zod.object({

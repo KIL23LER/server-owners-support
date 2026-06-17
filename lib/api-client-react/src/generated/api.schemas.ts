@@ -91,6 +91,11 @@ export interface UpdateSettingResult {
   value: string;
 }
 
+export interface BotApplyInput {
+  guildId: string;
+  templateId: number;
+}
+
 export interface SuccessResponse {
   success: boolean;
 }

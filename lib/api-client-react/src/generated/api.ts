@@ -24,6 +24,7 @@ import type {
   AdminStats,
   AdminUser,
   AuthUser,
+  BotApplyInput,
   CreateTemplateInput,
   Guild,
   HealthStatus,
@@ -1018,6 +1019,77 @@ export const useRemoveAdmin = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getRemoveAdminMutationOptions(options));
+    }
+
+export const getApplyBotTemplateUrl = () => {
+
+
+
+
+  return `/api/bot/apply`
+}
+
+/**
+ * @summary Apply a template to a Discord guild via bot
+ */
+export const applyBotTemplate = async (botApplyInput: BotApplyInput, options?: RequestInit): Promise<SuccessResponse> => {
+
+  return customFetch<SuccessResponse>(getApplyBotTemplateUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      botApplyInput,)
+  }
+);}
+
+
+
+
+export const getApplyBotTemplateMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof applyBotTemplate>>, TError,{data: BodyType<BotApplyInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof applyBotTemplate>>, TError,{data: BodyType<BotApplyInput>}, TContext> => {
+
+const mutationKey = ['applyBotTemplate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof applyBotTemplate>>, {data: BodyType<BotApplyInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  applyBotTemplate(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ApplyBotTemplateMutationResult = NonNullable<Awaited<ReturnType<typeof applyBotTemplate>>>
+    export type ApplyBotTemplateMutationBody = BodyType<BotApplyInput>
+    export type ApplyBotTemplateMutationError = ErrorType<void>
+
+    /**
+ * @summary Apply a template to a Discord guild via bot
+ */
+export const useApplyBotTemplate = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof applyBotTemplate>>, TError,{data: BodyType<BotApplyInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof applyBotTemplate>>,
+        TError,
+        {data: BodyType<BotApplyInput>},
+        TContext
+      > => {
+      return useMutation(getApplyBotTemplateMutationOptions(options));
     }
 
 export const getGetInviteUrl = () => {
