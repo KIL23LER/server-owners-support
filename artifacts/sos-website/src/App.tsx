@@ -10,6 +10,7 @@ import Admin from "@/pages/Admin";
 import TemplateCustomizer from "@/pages/TemplateCustomizer";
 import BotPage from "@/pages/BotPage";
 import NotFound from "@/pages/not-found";
+import "@/lib/i18n";
 
 const queryClient = new QueryClient({
   defaultOptions: {
