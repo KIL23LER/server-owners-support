@@ -15,6 +15,7 @@ export interface AuthUser {
   globalName?: string | null;
   avatar?: string | null;
   isAdmin: boolean;
+  isOwner: boolean;
 }
 
 export interface Guild {
@@ -65,11 +66,29 @@ export interface AdminUser {
   id: number;
   discordId: string;
   addedBy: string;
+  isOwner: boolean;
   createdAt: string;
 }
 
 export interface AddAdminInput {
   discordId: string;
+  isOwner?: boolean;
+}
+
+export interface InviteResponse {
+  invite: string;
+}
+
+export interface SettingsMap {[key: string]: string}
+
+export interface UpdateSettingInput {
+  value: string;
+}
+
+export interface UpdateSettingResult {
+  success: boolean;
+  key: string;
+  value: string;
 }
 
 export interface SuccessResponse {

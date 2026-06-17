@@ -12,4 +12,5 @@ export interface AuthUser {
   globalName?: string | null;
   avatar?: string | null;
   isAdmin: boolean;
+  isOwner: boolean;
 }

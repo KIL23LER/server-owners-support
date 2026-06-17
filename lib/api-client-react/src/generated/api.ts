@@ -27,9 +27,13 @@ import type {
   CreateTemplateInput,
   Guild,
   HealthStatus,
+  InviteResponse,
   ListTemplatesParams,
+  SettingsMap,
   SuccessResponse,
   Template,
+  UpdateSettingInput,
+  UpdateSettingResult,
   UpdateTemplateInput
 } from './api.schemas';
 
@@ -1014,5 +1018,231 @@ export const useRemoveAdmin = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getRemoveAdminMutationOptions(options));
+    }
+
+export const getGetInviteUrl = () => {
+
+
+
+
+  return `/api/settings/invite`
+}
+
+/**
+ * @summary Get Discord invite link
+ */
+export const getInvite = async ( options?: RequestInit): Promise<InviteResponse> => {
+
+  return customFetch<InviteResponse>(getGetInviteUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetInviteQueryKey = () => {
+    return [
+    `/api/settings/invite`
+    ] as const;
+    }
+
+
+export const getGetInviteQueryOptions = <TData = Awaited<ReturnType<typeof getInvite>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getInvite>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetInviteQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getInvite>>> = ({ signal }) => getInvite({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getInvite>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetInviteQueryResult = NonNullable<Awaited<ReturnType<typeof getInvite>>>
+export type GetInviteQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get Discord invite link
+ */
+
+export function useGetInvite<TData = Awaited<ReturnType<typeof getInvite>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getInvite>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetInviteQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetAdminSettingsUrl = () => {
+
+
+
+
+  return `/api/admin/settings`
+}
+
+/**
+ * @summary Get all settings (admin)
+ */
+export const getAdminSettings = async ( options?: RequestInit): Promise<SettingsMap> => {
+
+  return customFetch<SettingsMap>(getGetAdminSettingsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAdminSettingsQueryKey = () => {
+    return [
+    `/api/admin/settings`
+    ] as const;
+    }
+
+
+export const getGetAdminSettingsQueryOptions = <TData = Awaited<ReturnType<typeof getAdminSettings>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminSettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAdminSettingsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAdminSettings>>> = ({ signal }) => getAdminSettings({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminSettings>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAdminSettingsQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminSettings>>>
+export type GetAdminSettingsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get all settings (admin)
+ */
+
+export function useGetAdminSettings<TData = Awaited<ReturnType<typeof getAdminSettings>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminSettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAdminSettingsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getUpdateSettingUrl = (key: string,) => {
+
+
+
+
+  return `/api/admin/settings/${key}`
+}
+
+/**
+ * @summary Update a setting (admin)
+ */
+export const updateSetting = async (key: string,
+    updateSettingInput: UpdateSettingInput, options?: RequestInit): Promise<UpdateSettingResult> => {
+
+  return customFetch<UpdateSettingResult>(getUpdateSettingUrl(key),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updateSettingInput,)
+  }
+);}
+
+
+
+
+export const getUpdateSettingMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateSetting>>, TError,{key: string;data: BodyType<UpdateSettingInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateSetting>>, TError,{key: string;data: BodyType<UpdateSettingInput>}, TContext> => {
+
+const mutationKey = ['updateSetting'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateSetting>>, {key: string;data: BodyType<UpdateSettingInput>}> = (props) => {
+          const {key,data} = props ?? {};
+
+          return  updateSetting(key,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateSettingMutationResult = NonNullable<Awaited<ReturnType<typeof updateSetting>>>
+    export type UpdateSettingMutationBody = BodyType<UpdateSettingInput>
+    export type UpdateSettingMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Update a setting (admin)
+ */
+export const useUpdateSetting = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateSetting>>, TError,{key: string;data: BodyType<UpdateSettingInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateSetting>>,
+        TError,
+        {key: string;data: BodyType<UpdateSettingInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateSettingMutationOptions(options));
     }
 

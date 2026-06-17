@@ -10,5 +10,6 @@ export interface AdminUser {
   id: number;
   discordId: string;
   addedBy: string;
+  isOwner: boolean;
   createdAt: string;
 }

@@ -25,7 +25,8 @@ export const GetMeResponse = zod.object({
   "username": zod.string(),
   "globalName": zod.string().nullish(),
   "avatar": zod.string().nullish(),
-  "isAdmin": zod.boolean()
+  "isAdmin": zod.boolean(),
+  "isOwner": zod.boolean()
 })
 
 
@@ -163,6 +164,7 @@ export const ListAdminsResponseItem = zod.object({
   "id": zod.number(),
   "discordId": zod.string(),
   "addedBy": zod.string(),
+  "isOwner": zod.boolean(),
   "createdAt": zod.string()
 })
 export const ListAdminsResponse = zod.array(ListAdminsResponseItem)
@@ -172,7 +174,8 @@ export const ListAdminsResponse = zod.array(ListAdminsResponseItem)
  * @summary Add admin
  */
 export const AddAdminBody = zod.object({
-  "discordId": zod.string()
+  "discordId": zod.string(),
+  "isOwner": zod.boolean().optional()
 })
 
 
@@ -185,6 +188,38 @@ export const RemoveAdminParams = zod.object({
 
 export const RemoveAdminResponse = zod.object({
   "success": zod.boolean()
+})
+
+
+/**
+ * @summary Get Discord invite link
+ */
+export const GetInviteResponse = zod.object({
+  "invite": zod.string()
+})
+
+
+/**
+ * @summary Get all settings (admin)
+ */
+export const GetAdminSettingsResponse = zod.record(zod.string(), zod.string())
+
+
+/**
+ * @summary Update a setting (admin)
+ */
+export const UpdateSettingParams = zod.object({
+  "key": zod.coerce.string()
+})
+
+export const UpdateSettingBody = zod.object({
+  "value": zod.string()
+})
+
+export const UpdateSettingResponse = zod.object({
+  "success": zod.boolean(),
+  "key": zod.string(),
+  "value": zod.string()
 })
 
 

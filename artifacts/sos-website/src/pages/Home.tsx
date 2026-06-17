@@ -2,16 +2,16 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useListTemplates } from "@workspace/api-client-react";
+import { useListTemplates, useGetInvite } from "@workspace/api-client-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Users, Shield, Star, Award, MessageSquare, LayoutTemplate } from "lucide-react";
 
 export default function Home() {
   const { data: templates, isLoading } = useListTemplates({ featured: true }, {
-    query: {
-      queryKey: ["templates", "featured"]
-    }
+    query: { queryKey: ["templates", "featured"] }
   });
+  const { data: inviteData } = useGetInvite();
+  const inviteLink = inviteData?.invite ?? "https://discord.gg/264549513333702657";
 
   const sections = [
     { name: "البداية", icon: MessageSquare, description: "نقطة انطلاقك في مجتمعنا، تعرف على القوانين وكيفية الاستفادة القصوى من الخادم." },
@@ -46,7 +46,7 @@ export default function Home() {
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
               <Button size="lg" asChild className="text-base h-12 px-8 shadow-lg hover-elevate">
-                <a href="https://discord.gg/264549513333702657" target="_blank" rel="noopener noreferrer">
+                <a href={inviteLink} target="_blank" rel="noopener noreferrer">
                   انضم للسيرفر
                 </a>
               </Button>

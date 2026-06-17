@@ -2,11 +2,12 @@ import { useState } from "react";
 import { useAuth } from "@/lib/auth";
 import { Link } from "wouter";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ShieldAlert, BarChart3, LayoutTemplate, Users, PlusCircle } from "lucide-react";
+import { ShieldAlert, BarChart3, LayoutTemplate, Users, PlusCircle, Settings2 } from "lucide-react";
 import AddTemplateForm from "@/components/admin/AddTemplateForm";
 import ManageTemplates from "@/components/admin/ManageTemplates";
 import ManageAdmins from "@/components/admin/ManageAdmins";
 import AdminStatsDashboard from "@/components/admin/AdminStats";
+import ManageSettings from "@/components/admin/ManageSettings";
 
 export default function Admin() {
   const { user, isLoading } = useAuth();
@@ -46,7 +47,7 @@ export default function Admin() {
       </div>
 
       <Tabs defaultValue="stats" className="w-full" dir="rtl">
-        <TabsList className="grid w-full grid-cols-4 mb-8 bg-muted/50 p-1">
+        <TabsList className="grid w-full grid-cols-5 mb-8 bg-muted/50 p-1">
           <TabsTrigger value="stats" className="flex items-center gap-2 data-[state=active]:bg-background">
             <BarChart3 className="h-4 w-4 hidden sm:block" />
             <span>الإحصائيات</span>
@@ -63,6 +64,10 @@ export default function Admin() {
             <Users className="h-4 w-4 hidden sm:block" />
             <span>إدارة الإداريين</span>
           </TabsTrigger>
+          <TabsTrigger value="settings" className="flex items-center gap-2 data-[state=active]:bg-background">
+            <Settings2 className="h-4 w-4 hidden sm:block" />
+            <span>الإعدادات</span>
+          </TabsTrigger>
         </TabsList>
         
         <div className="bg-card border border-border/50 rounded-xl p-6 shadow-sm">
@@ -77,6 +82,9 @@ export default function Admin() {
           </TabsContent>
           <TabsContent value="admins" className="mt-0 outline-none">
             <ManageAdmins />
+          </TabsContent>
+          <TabsContent value="settings" className="mt-0 outline-none">
+            <ManageSettings />
           </TabsContent>
         </div>
       </Tabs>

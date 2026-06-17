@@ -9,6 +9,7 @@ export interface AuthUser {
   globalName: string | null;
   avatar: string | null;
   isAdmin: boolean;
+  isOwner: boolean;
 }
 
 declare global {
@@ -49,6 +50,7 @@ async function getSessionUser(token: string): Promise<AuthUser | null> {
     globalName: user.globalName,
     avatar: avatarUrl,
     isAdmin: admin.length > 0,
+    isOwner: admin[0]?.isOwner ?? false,
   };
 }
 
@@ -95,6 +97,16 @@ export async function requireAdmin(req: Request, res: Response, next: NextFuncti
     return;
   }
 
+  req.user = user;
+  next();
+}
+
+export async function requireOwner(req: Request, res: Response, next: NextFunction) {
+  const token = extractToken(req);
+  if (!token) { res.status(401).json({ error: "غير مصرح" }); return; }
+  const user = await getSessionUser(token);
+  if (!user) { res.status(401).json({ error: "جلسة غير صالحة أو منتهية" }); return; }
+  if (!user.isOwner) { res.status(403).json({ error: "يجب أن تكون Owner" }); return; }
   req.user = user;
   next();
 }

@@ -6,7 +6,6 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface AddAdminInput {
-  discordId: string;
-  isOwner?: boolean;
+export interface InviteResponse {
+  invite: string;
 }
