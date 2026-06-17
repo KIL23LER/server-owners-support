@@ -11,6 +11,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const user = await getSessionUser(token);
   if (!user?.isAdmin) return res.status(403).json({ error: "يجب أن تكون أدمن" });
 
+  const key = req.query.key as string | undefined;
+
+  if (key && req.method === "PUT") {
+    const { value } = req.body;
+    if (!value || typeof value !== "string") return res.status(400).json({ error: "القيمة مطلوبة" });
+    await db.insert(settingsTable)
+      .values({ key, value, updatedBy: user.discordId })
+      .onConflictDoUpdate({ target: settingsTable.key, set: { value, updatedAt: new Date(), updatedBy: user.discordId } });
+    return res.json({ success: true, key, value });
+  }
+
   if (req.method === "GET") {
     const settings = await db.select().from(settingsTable);
     const map: Record<string, string> = {};
