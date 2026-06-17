@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "buildCommand": "PORT=3000 BASE_PATH=/ pnpm --filter @workspace/sos-website run build && pnpm --filter @workspace/api-server run build",
+  "outputDirectory": "artifacts/sos-website/dist/public",
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/index" }
+  ],
+  "functions": {
+    "api/index.js": {
+      "includeFiles": "artifacts/api-server/dist/**",
+      "memory": 512,
+      "maxDuration": 30
+    }
+  }
+}

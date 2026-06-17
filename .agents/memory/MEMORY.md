@@ -1,0 +1,2 @@
+- [Vercel full-stack deploy](vercel-deploy.md) — vercel.json + api/index.js pattern; need .vercelignore to exclude *.map files (10MB limit)
+- [Mobile auth deep link](mobile-auth.md) — backend state param carries mobile=true; callback redirects to sos-website-mobile://auth?session=TOKEN
