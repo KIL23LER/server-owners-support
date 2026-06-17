@@ -39,11 +39,15 @@ async function getSessionUser(token: string): Promise<AuthUser | null> {
     .where(eq(adminsTable.discordId, user.discordId))
     .limit(1);
 
+  const avatarUrl = user.avatar
+    ? `https://cdn.discordapp.com/avatars/${user.discordId}/${user.avatar}.png?size=128`
+    : `https://cdn.discordapp.com/embed/avatars/${Number(BigInt(user.discordId) >> 22n) % 6}.png`;
+
   return {
     discordId: user.discordId,
     username: user.username,
     globalName: user.globalName,
-    avatar: user.avatar,
+    avatar: avatarUrl,
     isAdmin: admin.length > 0,
   };
 }

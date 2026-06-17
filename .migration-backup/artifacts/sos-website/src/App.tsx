@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Switch, Route, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -9,9 +8,15 @@ import Home from "@/pages/Home";
 import Templates from "@/pages/Templates";
 import Admin from "@/pages/Admin";
 import NotFound from "@/pages/not-found";
-import "@/lib/api-client";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 function Router() {
   return (
@@ -26,7 +31,7 @@ function Router() {
   );
 }
 
-function App() {
+export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
@@ -40,5 +45,3 @@ function App() {
     </QueryClientProvider>
   );
 }
-
-export default App;

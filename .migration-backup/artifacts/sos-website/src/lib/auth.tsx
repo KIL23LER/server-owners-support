@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
-import { useGetMe, useLogout, getGetMeQueryKey, User } from "@workspace/api-client-react";
+import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
+import { useGetMe, useLogout, getGetMeQueryKey, User, setAuthTokenGetter } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface AuthContextType {
   user: User | null;
@@ -15,55 +16,90 @@ const AuthContext = createContext<AuthContextType>({
   logout: () => {},
 });
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [token, setToken] = useState<string | null>(localStorage.getItem("sos_session"));
+function getStoredToken(): string | null {
+  return localStorage.getItem("sos_session");
+}
 
-  // Check URL for session token (Discord OAuth redirect)
+function saveToken(token: string): void {
+  localStorage.setItem("sos_session", token);
+  setAuthTokenGetter(() => token);
+}
+
+function clearToken(): void {
+  localStorage.removeItem("sos_session");
+  setAuthTokenGetter(null);
+}
+
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [token, setToken] = useState<string | null>(() => {
+    const stored = getStoredToken();
+    if (stored) setAuthTokenGetter(() => stored);
+    return stored;
+  });
+
+  const queryClient = useQueryClient();
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const sessionToken = params.get("session");
+
     if (sessionToken) {
-      localStorage.setItem("sos_session", sessionToken);
+      saveToken(sessionToken);
       setToken(sessionToken);
-      // Redirect to templates page
-      window.location.href = "/templates";
+      window.history.replaceState({}, "", window.location.pathname);
+      window.location.replace("/templates");
+      return;
+    }
+
+    const errorCode = params.get("error");
+    if (errorCode) {
+      window.history.replaceState({}, "", window.location.pathname);
     }
   }, []);
 
-  const { data: user, isLoading: isUserLoading, refetch, error } = useGetMe({
+  const { data: user, isLoading: isUserLoading, error } = useGetMe({
     query: {
       queryKey: getGetMeQueryKey(),
       enabled: !!token,
       retry: false,
-    }
+      staleTime: 5 * 60 * 1000,
+    },
   });
 
-  // If token is invalid/expired
   useEffect(() => {
     if (error && token) {
-      localStorage.removeItem("sos_session");
+      clearToken();
       setToken(null);
+      queryClient.clear();
     }
-  }, [error, token]);
+  }, [error, token, queryClient]);
 
-  const login = () => {
+  const login = useCallback(() => {
     window.location.href = "/api/auth/login";
-  };
+  }, []);
 
   const logoutMutation = useLogout();
 
-  const logout = () => {
+  const logout = useCallback(() => {
     logoutMutation.mutate(undefined, {
       onSettled: () => {
-        localStorage.removeItem("sos_session");
+        clearToken();
         setToken(null);
-        window.location.reload();
-      }
+        queryClient.clear();
+        window.location.replace("/");
+      },
     });
-  };
+  }, [logoutMutation, queryClient]);
 
   return (
-    <AuthContext.Provider value={{ user: user || null, isLoading: isUserLoading && !!token, login, logout }}>
+    <AuthContext.Provider
+      value={{
+        user: user ?? null,
+        isLoading: isUserLoading && !!token,
+        login,
+        logout,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

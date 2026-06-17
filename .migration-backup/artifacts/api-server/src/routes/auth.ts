@@ -11,12 +11,16 @@ const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID!;
 const DISCORD_CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET!;
 const REDIRECT_URI = process.env.DISCORD_REDIRECT_URI || "https://server-owners-support.vercel.app/api/auth/callback";
 
-router.get("/auth/login", (_req, res) => {
+router.get("/auth/login", (req, res) => {
+  const mobile = req.query.mobile === "true";
+  const mobileRedirect = req.query.redirect as string | undefined;
+  const state = mobile ? JSON.stringify({ mobile: true, redirect: mobileRedirect }) : undefined;
   const params = new URLSearchParams({
     client_id: DISCORD_CLIENT_ID,
     redirect_uri: REDIRECT_URI,
     response_type: "code",
     scope: "identify guilds",
+    ...(state ? { state } : {}),
   });
   res.redirect(`https://discord.com/api/oauth2/authorize?${params}`);
 });
@@ -92,7 +96,25 @@ router.get("/auth/callback", async (req, res) => {
       expiresAt,
     });
 
-    res.redirect(`/?session=${sessionToken}`);
+    let mobileRedirect: string | null = null;
+    try {
+      const stateStr = req.query.state as string | undefined;
+      if (stateStr) {
+        const parsed = JSON.parse(stateStr);
+        if (parsed.mobile) {
+          const base = (parsed.redirect && String(parsed.redirect).startsWith("sos-website-mobile://"))
+            ? parsed.redirect
+            : "sos-website-mobile://auth";
+          mobileRedirect = `${base}?session=${sessionToken}`;
+        }
+      }
+    } catch {}
+
+    if (mobileRedirect) {
+      res.redirect(mobileRedirect);
+    } else {
+      res.redirect(`/?session=${sessionToken}`);
+    }
   } catch (err) {
     req.log.error({ err }, "OAuth callback error");
     res.redirect("/?error=server_error");

@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, boolean, serial } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, boolean, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -8,22 +8,23 @@ export const usersTable = pgTable("users", {
   globalName: text("global_name"),
   avatar: text("avatar"),
   accessToken: text("access_token").notNull(),
-  refreshToken: text("refresh_token"),
+  refreshToken: text("refresh_token").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 export const sessionsTable = pgTable("sessions", {
-  token: text("token").primaryKey(),
-  discordId: text("discord_id")
-    .notNull()
-    .references(() => usersTable.discordId, { onDelete: "cascade" }),
+  id: serial("id").primaryKey(),
+  token: text("token").notNull().unique(),
+  discordId: text("discord_id").notNull().references(() => usersTable.discordId, { onDelete: "cascade" }),
   expiresAt: timestamp("expires_at").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const adminsTable = pgTable("admins", {
-  discordId: text("discord_id").primaryKey(),
-  addedBy: text("added_by"),
+  id: serial("id").primaryKey(),
+  discordId: text("discord_id").notNull().unique(),
+  addedBy: text("added_by").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -33,25 +34,24 @@ export const templatesTable = pgTable("templates", {
   description: text("description").notNull(),
   imageUrl: text("image_url"),
   templateCode: text("template_code").notNull(),
-  category: text("category").notNull().default("عام"),
-  createdBy: text("created_by")
-    .notNull()
-    .references(() => usersTable.discordId),
+  category: text("category").notNull(),
+  featured: boolean("featured").default(false).notNull(),
+  createdBy: text("created_by").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-  featured: boolean("featured").default(false).notNull(),
 });
 
-export const insertTemplateSchema = createInsertSchema(templatesTable).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-  createdBy: true,
-});
+export const insertUserSchema = createInsertSchema(usersTable);
+export const insertSessionSchema = createInsertSchema(sessionsTable);
+export const insertAdminSchema = createInsertSchema(adminsTable);
+export const insertTemplateSchema = createInsertSchema(templatesTable).omit({ id: true, createdAt: true, updatedAt: true });
 
+export type InsertUser = z.infer<typeof insertUserSchema>;
+export type InsertSession = z.infer<typeof insertSessionSchema>;
+export type InsertAdmin = z.infer<typeof insertAdminSchema>;
 export type InsertTemplate = z.infer<typeof insertTemplateSchema>;
-export type Template = typeof templatesTable.$inferSelect;
+
 export type User = typeof usersTable.$inferSelect;
 export type Session = typeof sessionsTable.$inferSelect;
 export type Admin = typeof adminsTable.$inferSelect;
-
+export type Template = typeof templatesTable.$inferSelect;
