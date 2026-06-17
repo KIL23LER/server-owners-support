@@ -15,24 +15,25 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { useTranslation } from "react-i18next";
 
 export default function Templates() {
+  const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  
+
   const { data: templates, isLoading } = useListTemplates({}, {
-    query: {
-      queryKey: ["templates"]
-    }
+    query: { queryKey: ["templates"] }
   });
 
-  const categories = templates 
-    ? Array.from(new Set(templates.map(t => t.category))) 
+  const categories = templates
+    ? Array.from(new Set(templates.map(t => t.category)))
     : [];
 
   const filteredTemplates = templates?.filter(template => {
-    const matchesSearch = template.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          template.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch =
+      template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      template.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory ? template.category === selectedCategory : true;
     return matchesSearch && matchesCategory;
   });
@@ -40,34 +41,31 @@ export default function Templates() {
   return (
     <div className="container mx-auto px-4 py-12">
       <div className="mb-12 text-center max-w-2xl mx-auto">
-        <h1 className="text-4xl font-extrabold mb-4 text-foreground">معرض القوالب</h1>
-        <p className="text-lg text-muted-foreground">
-          استكشف مجموعة واسعة من قوالب الديسكورد الجاهزة. اختر القالب المناسب لسيرفرك وقم بتطبيقه بضغطة زر.
-        </p>
+        <h1 className="text-4xl font-extrabold mb-4 text-foreground">{t("templates.title")}</h1>
+        <p className="text-lg text-muted-foreground">{t("templates.subtitle")}</p>
       </div>
 
-      {/* Filters & Search */}
       <div className="flex flex-col md:flex-row gap-4 mb-8">
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
-          <Input 
-            placeholder="ابحث عن قالب..." 
-            className="pr-10"
+          <Search className="absolute start-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
+          <Input
+            placeholder={t("templates.searchPlaceholder")}
+            className="ps-10"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        
+
         <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-          <Button 
+          <Button
             variant={selectedCategory === null ? "default" : "outline"}
             onClick={() => setSelectedCategory(null)}
             className="shrink-0"
           >
-            الكل
+            {t("templates.all")}
           </Button>
           {categories.map(category => (
-            <Button 
+            <Button
               key={category}
               variant={selectedCategory === category ? "default" : "outline"}
               onClick={() => setSelectedCategory(category)}
@@ -79,7 +77,6 @@ export default function Templates() {
         </div>
       </div>
 
-      {/* Templates Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {isLoading ? (
           Array.from({ length: 8 }).map((_, i) => (
@@ -97,8 +94,8 @@ export default function Templates() {
         ) : (
           <div className="col-span-full py-20 text-center flex flex-col items-center justify-center">
             <Filter className="h-12 w-12 text-muted-foreground/50 mb-4" />
-            <h3 className="text-xl font-bold mb-2">لا توجد نتائج</h3>
-            <p className="text-muted-foreground">لم نتمكن من العثور على قوالب تطابق بحثك.</p>
+            <h3 className="text-xl font-bold mb-2">{t("templates.noResults")}</h3>
+            <p className="text-muted-foreground">{t("templates.noResultsDesc")}</p>
           </div>
         )}
       </div>
@@ -107,6 +104,7 @@ export default function Templates() {
 }
 
 function TemplateCard({ template }: { template: Template }) {
+  const { t } = useTranslation();
   const { user, login } = useAuth();
   const [isApplyDialogOpen, setIsApplyDialogOpen] = useState(false);
 
@@ -135,7 +133,7 @@ function TemplateCard({ template }: { template: Template }) {
             {template.category}
           </Badge>
           {template.featured && (
-            <Badge className="bg-amber-500 hover:bg-amber-600">مميز</Badge>
+            <Badge className="bg-amber-500 hover:bg-amber-600">{t("templates.featured")}</Badge>
           )}
         </div>
         <h3 className="text-lg font-bold mb-2 line-clamp-1">{template.name}</h3>
@@ -146,18 +144,18 @@ function TemplateCard({ template }: { template: Template }) {
         <div className="mt-auto pt-4 border-t border-border/40">
           {!user ? (
             <Button className="w-full" onClick={login}>
-              سجّل دخول لتطبيق القالب
+              {t("templates.loginToApply")}
             </Button>
           ) : (
             <Dialog open={isApplyDialogOpen} onOpenChange={setIsApplyDialogOpen}>
               <DialogTrigger asChild>
-                <Button className="w-full">تطبيق على سيرفري</Button>
+                <Button className="w-full">{t("templates.applyToServer")}</Button>
               </DialogTrigger>
-              <DialogContent dir="rtl" className="max-w-md">
+              <DialogContent className="max-w-md">
                 <DialogHeader>
-                  <DialogTitle>تطبيق قالب: {template.name}</DialogTitle>
+                  <DialogTitle>{t("templates.applyDialog.title", { name: template.name })}</DialogTitle>
                   <DialogDescription>
-                    اضغط على سيرفرك وسيفتح Discord — اختر "Apply to Existing Server" ثم حدد سيرفرك.
+                    {t("templates.applyDialog.description")}
                   </DialogDescription>
                 </DialogHeader>
                 <ApplyTemplateForm template={template} templateUrl={templateUrl} />
@@ -171,6 +169,7 @@ function TemplateCard({ template }: { template: Template }) {
 }
 
 function ApplyTemplateForm({ template, templateUrl }: { template: Template; templateUrl: string }) {
+  const { t } = useTranslation();
   const { data: guilds, isLoading } = useGetMyGuilds({
     query: { queryKey: ["my-guilds"] }
   });
@@ -190,9 +189,9 @@ function ApplyTemplateForm({ template, templateUrl }: { template: Template; temp
     return (
       <div className="py-8 text-center space-y-4">
         <Server className="h-12 w-12 text-muted-foreground mx-auto" />
-        <p className="text-muted-foreground">ما عندك سيرفرات بصلاحيات أدمن.</p>
+        <p className="text-muted-foreground">{t("templates.applyDialog.noGuilds")}</p>
         <a href={templateUrl} target="_blank" rel="noopener noreferrer">
-          <Button className="w-full">فتح القالب في Discord</Button>
+          <Button className="w-full">{t("templates.applyDialog.openInDiscord")}</Button>
         </a>
       </div>
     );
@@ -214,31 +213,24 @@ function ApplyTemplateForm({ template, templateUrl }: { template: Template; temp
             </div>
           )}
           <span className="flex-1 font-medium text-sm">{selectedGuild.name}</span>
-          <Button
-            size="sm"
-            variant="ghost"
-            className="text-muted-foreground"
-            onClick={() => setSelectedGuild(null)}
-          >
-            تغيير
+          <Button size="sm" variant="ghost" className="text-muted-foreground" onClick={() => setSelectedGuild(null)}>
+            {t("templates.applyDialog.change")}
           </Button>
         </div>
 
         <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 space-y-1.5 text-sm">
-          <p className="font-semibold text-amber-600 dark:text-amber-400">خطوات التطبيق على Discord:</p>
-          <ol className="space-y-1 text-muted-foreground pr-4 list-decimal">
-            <li>اضغط الزر أدناه لفتح صفحة القالب في Discord</li>
-            <li>اختر <strong className="text-foreground">"Apply to Existing Server"</strong></li>
-            <li>
-              اختر سيرفر <strong className="text-foreground">{selectedGuild.name}</strong> من القائمة
-            </li>
+          <p className="font-semibold text-amber-600 dark:text-amber-400">{t("templates.applyDialog.steps")}</p>
+          <ol className="space-y-1 text-muted-foreground ps-4 list-decimal">
+            <li>{t("templates.applyDialog.step1")}</li>
+            <li>{t("templates.applyDialog.step2")}</li>
+            <li>{t("templates.applyDialog.step3", { guild: selectedGuild.name })}</li>
           </ol>
         </div>
 
         <a href={templateUrl} target="_blank" rel="noopener noreferrer">
           <Button className="w-full gap-2">
             <Server className="h-4 w-4" />
-            تطبيق على {selectedGuild.name}
+            {t("templates.applyDialog.applyOn", { guild: selectedGuild.name })}
           </Button>
         </a>
       </div>
@@ -247,13 +239,13 @@ function ApplyTemplateForm({ template, templateUrl }: { template: Template; temp
 
   return (
     <div className="space-y-2 py-2">
-      <p className="text-xs text-muted-foreground mb-3">اختر السيرفر اللي تريد تطبيق القالب عليه:</p>
-      <div className="max-h-[50vh] overflow-y-auto space-y-2 pl-1">
+      <p className="text-xs text-muted-foreground mb-3">{t("templates.applyDialog.selectServer")}</p>
+      <div className="max-h-[50vh] overflow-y-auto space-y-2 pe-1">
         {guilds.map((guild) => (
           <button
             key={guild.id}
             onClick={() => setSelectedGuild(guild)}
-            className="w-full flex items-center gap-3 p-3 rounded-lg border border-border hover:border-primary hover:bg-primary/5 transition-all group text-right"
+            className="w-full flex items-center gap-3 p-3 rounded-lg border border-border hover:border-primary hover:bg-primary/5 transition-all group text-start"
           >
             {guild.icon ? (
               <img
