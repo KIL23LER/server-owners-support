@@ -1,6 +1,8 @@
 {
   "installCommand": "pnpm install --no-frozen-lockfile",
   "rewrites": [
+    { "source": "/api/admin/users/:discordId", "destination": "/api/admin/users?discordId=:discordId" },
+    { "source": "/api/admin/settings/:key", "destination": "/api/admin/settings?key=:key" },
     { "source": "/api/(.*)", "destination": "/api/$1" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
