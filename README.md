@@ -104,6 +104,29 @@
 
 ---
 
+## 🚀 كيف تعمل Deploy على Vercel
+
+### الطريقة الأسهل — عبر GitHub
+أي `push` على branch الـ `main` يطلع deployment تلقائي على Vercel.
+
+### إذا أردت تعمل Deploy يدوياً (عبر Vercel Dashboard)
+1. افتح https://vercel.com/kil23ler/server-owners-support
+2. اضغط **"Redeploy"** على آخر deployment
+3. اختر **"Redeploy without cache"** إذا في مشاكل
+
+### إذا أردت تعمل Deploy عبر Vercel CLI
+```bash
+npm i -g vercel
+vercel --prod --token=YOUR_VERCEL_TOKEN
+```
+
+### إذا انكسر الـ deployment وأردت ترجع لنسخة قديمة
+1. افتح https://vercel.com/kil23ler/server-owners-support/deployments
+2. اختر أي deployment قديم يعمل
+3. اضغط **"Promote to Production"**
+
+---
+
 ## 🛠️ تطوير محلي
 
 ```bash
