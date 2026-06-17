@@ -1,26 +1,15 @@
-# Sourcemaps - too large
-**/*.map
-**/*.map.gz
-
-# Mobile app - not needed for web deployment
-artifacts/sos-website-mobile/
-
-# Migration backup
-.migration-backup/
-
-# Test files and docs
-**/*.test.ts
-**/*.test.tsx
-**/*.spec.ts
-**/*.spec.tsx
-
-# Local agent state
-.local/
-.agents/
-
-# Git
-.git/
-
-# OS files
-.DS_Store
-Thumbs.db
+node_modules
+.git
+.migration-backup
+artifacts/mockup-sandbox
+artifacts/sos-website/node_modules
+artifacts/sos-website/dist
+artifacts/api-server/node_modules
+lib/api-client-react/node_modules
+lib/api-spec/node_modules
+lib/api-zod/node_modules
+lib/db/node_modules
+attached_assets
+.local
+*.log
+.pnpm-store

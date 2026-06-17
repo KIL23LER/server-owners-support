@@ -7,6 +7,8 @@ import { Layout } from "@/components/layout/Layout";
 import Home from "@/pages/Home";
 import Templates from "@/pages/Templates";
 import Admin from "@/pages/Admin";
+import TemplateCustomizer from "@/pages/TemplateCustomizer";
+import BotPage from "@/pages/BotPage";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient({
@@ -24,6 +26,8 @@ function Router() {
       <Switch>
         <Route path="/" component={Home} />
         <Route path="/templates" component={Templates} />
+        <Route path="/customize" component={TemplateCustomizer} />
+        <Route path="/bot" component={BotPage} />
         <Route path="/admin" component={Admin} />
         <Route component={NotFound} />
       </Switch>
