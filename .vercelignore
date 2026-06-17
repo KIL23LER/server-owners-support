@@ -1,0 +1,15 @@
+node_modules
+.git
+.migration-backup
+artifacts/mockup-sandbox
+artifacts/sos-website/node_modules
+artifacts/sos-website/dist
+artifacts/api-server/node_modules
+lib/api-client-react/node_modules
+lib/api-spec/node_modules
+lib/api-zod/node_modules
+lib/db/node_modules
+attached_assets
+.local
+*.log
+.pnpm-store
