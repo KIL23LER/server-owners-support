@@ -174,6 +174,7 @@ function ApplyTemplateForm({ template, templateUrl }: { template: Template; temp
   const { data: guilds, isLoading } = useGetMyGuilds({
     query: { queryKey: ["my-guilds"] }
   });
+  const [selectedGuild, setSelectedGuild] = useState<{ id: string; name: string; icon: string | null } | null>(null);
 
   if (isLoading) {
     return (
@@ -197,19 +198,62 @@ function ApplyTemplateForm({ template, templateUrl }: { template: Template; temp
     );
   }
 
+  if (selectedGuild) {
+    return (
+      <div className="space-y-4 py-2">
+        <div className="flex items-center gap-3 p-3 rounded-lg border border-primary bg-primary/5">
+          {selectedGuild.icon ? (
+            <img
+              src={`https://cdn.discordapp.com/icons/${selectedGuild.id}/${selectedGuild.icon}.png`}
+              alt={selectedGuild.name}
+              className="w-10 h-10 rounded-full flex-shrink-0"
+            />
+          ) : (
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary flex-shrink-0">
+              {selectedGuild.name.charAt(0)}
+            </div>
+          )}
+          <span className="flex-1 font-medium text-sm">{selectedGuild.name}</span>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="text-muted-foreground"
+            onClick={() => setSelectedGuild(null)}
+          >
+            تغيير
+          </Button>
+        </div>
+
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 space-y-1.5 text-sm">
+          <p className="font-semibold text-amber-600 dark:text-amber-400">خطوات التطبيق على Discord:</p>
+          <ol className="space-y-1 text-muted-foreground pr-4 list-decimal">
+            <li>اضغط الزر أدناه لفتح صفحة القالب في Discord</li>
+            <li>اختر <strong className="text-foreground">"Apply to Existing Server"</strong></li>
+            <li>
+              اختر سيرفر <strong className="text-foreground">{selectedGuild.name}</strong> من القائمة
+            </li>
+          </ol>
+        </div>
+
+        <a href={templateUrl} target="_blank" rel="noopener noreferrer">
+          <Button className="w-full gap-2">
+            <Server className="h-4 w-4" />
+            تطبيق على {selectedGuild.name}
+          </Button>
+        </a>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-2 py-2">
-      <p className="text-xs text-muted-foreground mb-3 bg-primary/5 border border-primary/20 rounded-lg p-3">
-        بعد فتح Discord، اختر <strong>"Apply to Existing Server"</strong> واختر سيرفرك من القائمة.
-      </p>
+      <p className="text-xs text-muted-foreground mb-3">اختر السيرفر اللي تريد تطبيق القالب عليه:</p>
       <div className="max-h-[50vh] overflow-y-auto space-y-2 pl-1">
         {guilds.map((guild) => (
-          <a
+          <button
             key={guild.id}
-            href={templateUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-3 p-3 rounded-lg border border-border hover:border-primary hover:bg-primary/5 transition-all group"
+            onClick={() => setSelectedGuild(guild)}
+            className="w-full flex items-center gap-3 p-3 rounded-lg border border-border hover:border-primary hover:bg-primary/5 transition-all group text-right"
           >
             {guild.icon ? (
               <img
@@ -225,10 +269,8 @@ function ApplyTemplateForm({ template, templateUrl }: { template: Template; temp
             <span className="flex-1 font-medium text-sm group-hover:text-primary transition-colors line-clamp-1">
               {guild.name}
             </span>
-            <Button size="sm" variant="ghost" className="flex-shrink-0 text-primary opacity-0 group-hover:opacity-100 transition-opacity">
-              فتح
-            </Button>
-          </a>
+            <Server className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
+          </button>
         ))}
       </div>
     </div>

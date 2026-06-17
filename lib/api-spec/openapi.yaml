@@ -10,6 +10,12 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication
+  - name: templates
+    description: Discord templates
+  - name: discord
+    description: Discord data
 paths:
   /healthz:
     get:
@@ -24,7 +30,262 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current user
+      security:
+        - sessionToken: []
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUser"
+        "401":
+          description: Unauthorized
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Logout
+      security:
+        - sessionToken: []
+      responses:
+        "200":
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /discord/guilds:
+    get:
+      operationId: getMyGuilds
+      tags: [discord]
+      summary: Get user's guilds where they are owner
+      security:
+        - sessionToken: []
+      responses:
+        "200":
+          description: List of guilds
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Guild"
+        "401":
+          description: Unauthorized
+
+  /templates:
+    get:
+      operationId: listTemplates
+      tags: [templates]
+      summary: List all templates
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: featured
+          in: query
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: List of templates
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Template"
+    post:
+      operationId: createTemplate
+      tags: [templates]
+      summary: Create a template (admin only)
+      security:
+        - sessionToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTemplateInput"
+      responses:
+        "201":
+          description: Created template
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Template"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+
+  /templates/{id}:
+    get:
+      operationId: getTemplate
+      tags: [templates]
+      summary: Get a template by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Template
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Template"
+        "404":
+          description: Not found
+    put:
+      operationId: updateTemplate
+      tags: [templates]
+      summary: Update a template (admin only)
+      security:
+        - sessionToken: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTemplateInput"
+      responses:
+        "200":
+          description: Updated template
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Template"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteTemplate
+      tags: [templates]
+      summary: Delete a template (admin only)
+      security:
+        - sessionToken: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+
+  /admin/stats:
+    get:
+      operationId: getAdminStats
+      tags: [admin]
+      summary: Get admin stats
+      security:
+        - sessionToken: []
+      responses:
+        "200":
+          description: Stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminStats"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+
+  /admin/users:
+    get:
+      operationId: listAdmins
+      tags: [admin]
+      summary: List admins
+      security:
+        - sessionToken: []
+      responses:
+        "200":
+          description: List of admins
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminUser"
+    post:
+      operationId: addAdmin
+      tags: [admin]
+      summary: Add admin
+      security:
+        - sessionToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddAdminInput"
+      responses:
+        "201":
+          description: Added admin
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUser"
+
+  /admin/users/{discordId}:
+    delete:
+      operationId: removeAdmin
+      tags: [admin]
+      summary: Remove admin
+      security:
+        - sessionToken: []
+      parameters:
+        - name: discordId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Removed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
 components:
+  securitySchemes:
+    sessionToken:
+      type: apiKey
+      in: header
+      name: x-session-token
   schemas:
     HealthStatus:
       type: object
@@ -34,3 +295,159 @@ components:
       required:
         - status
 
+    AuthUser:
+      type: object
+      properties:
+        discordId:
+          type: string
+        username:
+          type: string
+        globalName:
+          type: string
+          nullable: true
+        avatar:
+          type: string
+          nullable: true
+        isAdmin:
+          type: boolean
+      required:
+        - discordId
+        - username
+        - isAdmin
+
+    Guild:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        icon:
+          type: string
+          nullable: true
+        owner:
+          type: boolean
+      required:
+        - id
+        - name
+        - owner
+
+    Template:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        imageUrl:
+          type: string
+          nullable: true
+        templateCode:
+          type: string
+        category:
+          type: string
+        featured:
+          type: boolean
+        createdBy:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - name
+        - description
+        - templateCode
+        - category
+        - featured
+        - createdBy
+        - createdAt
+
+    CreateTemplateInput:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        imageUrl:
+          type: string
+        templateCode:
+          type: string
+        category:
+          type: string
+        featured:
+          type: boolean
+      required:
+        - name
+        - description
+        - templateCode
+        - category
+
+    UpdateTemplateInput:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        imageUrl:
+          type: string
+          nullable: true
+        templateCode:
+          type: string
+        category:
+          type: string
+        featured:
+          type: boolean
+
+    AdminStats:
+      type: object
+      properties:
+        totalTemplates:
+          type: integer
+        totalAdmins:
+          type: integer
+        totalUsers:
+          type: integer
+        featuredTemplates:
+          type: integer
+      required:
+        - totalTemplates
+        - totalAdmins
+        - totalUsers
+        - featuredTemplates
+
+    AdminUser:
+      type: object
+      properties:
+        id:
+          type: integer
+        discordId:
+          type: string
+        addedBy:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - discordId
+        - addedBy
+        - createdAt
+
+    AddAdminInput:
+      type: object
+      properties:
+        discordId:
+          type: string
+      required:
+        - discordId
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+      required:
+        - success
