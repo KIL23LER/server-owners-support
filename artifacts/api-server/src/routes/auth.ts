@@ -102,7 +102,9 @@ router.get("/auth/callback", async (req, res) => {
       if (stateStr) {
         const parsed = JSON.parse(stateStr);
         if (parsed.mobile) {
-          const base = parsed.redirect ?? "sos-website-mobile://auth";
+          const base = (parsed.redirect && String(parsed.redirect).startsWith("sos-website-mobile://"))
+            ? parsed.redirect
+            : "sos-website-mobile://auth";
           mobileRedirect = `${base}?session=${sessionToken}`;
         }
       }

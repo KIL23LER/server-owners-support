@@ -16,7 +16,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/contexts/AuthContext";
 
-const API_BASE = process.env.EXPO_PUBLIC_API_URL ?? "";
+const DOMAIN = process.env.EXPO_PUBLIC_DOMAIN;
+const API_BASE = DOMAIN ? `https://${DOMAIN}` : "";
 
 export default function ProfileScreen() {
   const colors = useColors();

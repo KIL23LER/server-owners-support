@@ -91,7 +91,7 @@ export default function TemplatesScreen() {
               <Pressable
                 style={s.applyBtn}
                 onPress={() => {
-                  const url = `https://discord.new/${t.discordTemplateCode}`;
+                  const url = `https://discord.new/${t.templateCode}`;
                   Linking.openURL(url);
                 }}
               >
