@@ -1,13 +1,8 @@
-import { drizzle } from "drizzle-orm/node-postgres";
-import pkg from "pg";
+import { drizzle } from "drizzle-orm/neon-http";
+import { neon } from "@neondatabase/serverless";
 import { pgTable, text, serial, boolean, timestamp } from "drizzle-orm/pg-core";
 
-const { Pool } = pkg;
-
-const pool = new Pool({
-  connectionString: process.env.NEON_DATABASE_URL || process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false },
-});
+const sql = neon(process.env.NEON_DATABASE_URL || process.env.DATABASE_URL!);
 
 export const usersTable = pgTable("users", {
   discordId: text("discord_id").primaryKey(),
@@ -56,6 +51,6 @@ export const settingsTable = pgTable("settings", {
   updatedBy: text("updated_by").notNull(),
 });
 
-export const db = drizzle(pool, {
+export const db = drizzle(sql, {
   schema: { usersTable, sessionsTable, adminsTable, templatesTable, settingsTable },
 });
