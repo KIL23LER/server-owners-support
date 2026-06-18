@@ -44,24 +44,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       id: string; username: string; global_name?: string; avatar?: string;
     };
 
-    // @ts-ignore - drizzle-orm 0.41 type inference issue with nullable columns
-    await db.insert(usersTable).values({
+    const insertData = {
       discordId: discordUser.id,
       username: discordUser.username,
       globalName: discordUser.global_name ?? null,
       avatar: discordUser.avatar ?? null,
       accessToken: tokenData.access_token,
       refreshToken: tokenData.refresh_token,
-    // @ts-ignore
-    }).onConflictDoUpdate({
+    } as any;
+
+    const updateData = {
+      username: discordUser.username,
+      globalName: discordUser.global_name ?? null,
+      avatar: discordUser.avatar ?? null,
+      accessToken: tokenData.access_token,
+      refreshToken: tokenData.refresh_token,
+    } as any;
+
+    await db.insert(usersTable).values(insertData).onConflictDoUpdate({
       target: usersTable.discordId,
-      set: {
-        username: discordUser.username,
-        globalName: discordUser.global_name ?? null,
-        avatar: discordUser.avatar ?? null,
-        accessToken: tokenData.access_token,
-        refreshToken: tokenData.refresh_token,
-      },
+      set: updateData,
     });
 
     step = "session_create";
