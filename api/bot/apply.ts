@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { db, templatesTable } from "../_lib/db.js";
+import { db, templatesTable, usersTable } from "../_lib/db.js";
 import { eq } from "drizzle-orm";
 import { extractToken, getSessionUser, cors } from "../_lib/auth.js";
 
@@ -38,11 +38,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const user = await getSessionUser(token);
   if (!user) return res.status(401).json({ error: "جلسة غير صالحة" });
 
-  const { guildId, templateId, accessToken } = req.body;
+  const { guildId, templateId } = req.body;
   if (!guildId || !templateId) return res.status(400).json({ error: "guildId و templateId مطلوبان" });
-  if (!accessToken) return res.status(400).json({ error: "access token مطلوب" });
 
-  const adminGuilds = await getUserAdminGuilds(accessToken);
+  const userRow = await db.query.usersTable.findFirst({ where: eq(usersTable.discordId, user.discordId) });
+  if (!userRow?.accessToken) return res.status(401).json({ error: "تعذّر الحصول على صلاحيات Discord، أعد تسجيل الدخول" });
+
+  const adminGuilds = await getUserAdminGuilds(userRow.accessToken);
   if (!adminGuilds.includes(String(guildId)))
     return res.status(403).json({ error: "ليس لديك صلاحية ADMINISTRATOR في هذا السيرفر" });
 
@@ -65,12 +67,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   for (const role of source.roles ?? []) {
     if (role.name === "@everyone") continue;
-    const r = await discordBot(`/guilds/${guildId}/roles`, {
+    await discordBot(`/guilds/${guildId}/roles`, {
       method: "POST",
       body: JSON.stringify({ name: role.name, color: role.color ?? 0, permissions: String(role.permissions ?? "0"), mentionable: role.mentionable ?? false, hoist: role.hoist ?? false }),
     });
     await delay();
-    if (!r.ok) continue;
   }
 
   for (const ch of source.channels ?? []) {
