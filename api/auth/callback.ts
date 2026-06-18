@@ -14,6 +14,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { code } = req.query;
   if (!code || typeof code !== "string") return res.redirect("/?error=no_code");
 
+  let step = "token_exchange";
   try {
     const tokenRes = await fetch("https://discord.com/api/oauth2/token", {
       method: "POST",
@@ -26,15 +27,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         redirect_uri: REDIRECT_URI,
       }),
     });
-    if (!tokenRes.ok) return res.redirect("/?error=token_failed");
+    if (!tokenRes.ok) {
+      const body = await tokenRes.text();
+      return res.redirect(`/?error=token_failed&detail=${encodeURIComponent(body.slice(0, 100))}`);
+    }
 
+    step = "user_fetch";
     const tokenData = await tokenRes.json() as { access_token: string; refresh_token: string };
-
     const userRes = await fetch("https://discord.com/api/users/@me", {
       headers: { Authorization: `Bearer ${tokenData.access_token}` },
     });
     if (!userRes.ok) return res.redirect("/?error=user_failed");
 
+    step = "db_insert";
     const discordUser = await userRes.json() as {
       id: string; username: string; global_name?: string; avatar?: string;
     };
@@ -57,6 +62,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       },
     });
 
+    step = "session_create";
     const sessionToken = randomBytes(32).toString("hex");
     await db.insert(sessionsTable).values({
       token: sessionToken,
@@ -78,7 +84,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (mobileRedirect) return res.redirect(mobileRedirect);
     return res.redirect(`/?session=${sessionToken}`);
-  } catch {
-    return res.redirect("/?error=server_error");
+  } catch (err) {
+    return res.redirect(`/?error=server_error&step=${step}&detail=${encodeURIComponent(String(err).slice(0, 150))}`);
   }
 }
