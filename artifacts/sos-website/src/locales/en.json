@@ -1,0 +1,130 @@
+{
+  "dir": "ltr",
+  "site": {
+    "name": "Server Owners Support",
+    "shortName": "SOS"
+  },
+  "nav": {
+    "home": "Home",
+    "templates": "Templates",
+    "customize": "Customize",
+    "bot": "Bot",
+    "browseTemplates": "Browse Templates",
+    "adminPanel": "Admin Panel",
+    "logout": "Logout",
+    "login": "Login with Discord",
+    "loginShort": "Login"
+  },
+  "home": {
+    "badge": "550+ Discord Server Owners",
+    "title": "The #1 Arabic Discord Server Owners Community",
+    "subtitle": "A place that brings server owners together to share experiences, templates, and get the support needed to build successful communities.",
+    "joinServer": "Join the Server",
+    "exploreTemplates": "Explore Templates",
+    "botBadge": "Official Discord Bot",
+    "botTitle": "Apply a template to your server in one click",
+    "botDesc": "The bot joins your server, creates all channels and roles automatically from the template you choose, then leaves on its own — it doesn't stay or monitor you.",
+    "botFeat1": "Creates channels & roles automatically",
+    "botFeat2": "Leaves after finishing",
+    "botFeat3": "100% safe — doesn't read messages",
+    "botCta": "Try the Bot Now",
+    "sectionsTitle": "Community Sections",
+    "sectionsSubtitle": "Discover the different sections of our server and how you can use them to grow your community.",
+    "featuredTitle": "Featured Templates",
+    "featuredSubtitle": "Ready-made templates to build your server in one click",
+    "viewAll": "View All Templates",
+    "noFeatured": "No featured templates yet.",
+    "viewDetails": "View Details",
+    "applyWithBot": "Apply with Bot",
+    "sections": {
+      "start": { "name": "Getting Started", "desc": "Your launchpad in our community — learn the rules and get the most out of the server." },
+      "server": { "name": "Your Server", "desc": "Share your server, get growth tips, and connect with other server owners." },
+      "security": { "name": "Security", "desc": "Latest Discord vulnerabilities and how to protect your server from raids and spam." },
+      "rating": { "name": "Reviews", "desc": "Review others' servers and get constructive feedback on yours from community experts." },
+      "apply": { "name": "Hiring", "desc": "Find admins and developers for your server, or offer your skills to help others." },
+      "cup": { "name": "Cup 2026", "desc": "Community challenges and events — participate and win valuable prizes." }
+    }
+  },
+  "templates": {
+    "title": "Templates Gallery",
+    "subtitle": "Explore a wide range of ready-made Discord templates. Choose the right one for your server and apply it in one click.",
+    "searchPlaceholder": "Search templates...",
+    "all": "All",
+    "noResults": "No Results",
+    "noResultsDesc": "We couldn't find any templates matching your search.",
+    "featured": "Featured",
+    "loginToApply": "Login to Apply Template",
+    "applyToServer": "Apply to My Server",
+    "customize": "Customize",
+    "applyDialog": {
+      "title": "Apply template: {{name}}",
+      "addBot": "Add Bot",
+      "step1Title": "Add the Bot to Your Server",
+      "step1Desc": "Click the button below and add the bot with Server Administrator permission.",
+      "step2Title": "Bot Applies the Template Automatically",
+      "step2Desc": "Once added, the bot immediately creates all channels and roles from the template — no commands needed.",
+      "step3Title": "Bot Leaves Automatically",
+      "step3Desc": "After finishing, the bot leaves your server on its own. It won't stay or monitor you.",
+      "safetyNote": "The bot doesn't monitor your server — it only enters to apply the template then leaves automatically.",
+      "customize": "Customize Emojis & Colors",
+      "close": "Close",
+      "noGuilds": "You have no servers with admin permissions.",
+      "openInDiscord": "Open Template in Discord",
+      "change": "Change",
+      "steps": "Steps to apply on Discord:",
+      "step1": "Click the button below to open the template page in Discord",
+      "step2": "Choose \"Apply to Existing Server\"",
+      "step3": "Select server {{guild}} from the list",
+      "applyOn": "Apply to {{guild}}",
+      "selectServer": "Choose the server you want to apply the template to:"
+    }
+  },
+  "bot": {
+    "badge": "Official Discord Bot",
+    "title": "Apply a template to your server",
+    "titleHighlight": " in one click",
+    "subtitle": "Choose a template, add the bot to your server, and it will create all channels and roles automatically then leave. No commands, no setup.",
+    "chooseTemplate": "Choose a Template",
+    "noTemplates": "No templates available yet.",
+    "addAndApply": "Add Bot & Apply",
+    "howItWorks": "How does it work?",
+    "steps": {
+      "1": { "title": "Choose a Template", "desc": "Pick the right template for your server and click \"Add Bot & Apply\"." },
+      "2": { "title": "Add to your server", "desc": "Discord opens and asks you to choose a server — select it and confirm." },
+      "3": { "title": "Bot works then leaves", "desc": "The bot creates all channels and roles automatically, then leaves your server." }
+    },
+    "safetyTitle": "The bot doesn't stay in your server",
+    "safetyDesc": "It only enters to apply the template, then leaves automatically. It doesn't read your messages or monitor you.",
+    "botAdded": "Bot has been added to your server!",
+    "chooseToApply": "Choose the template you want to apply:",
+    "loginWarning": "You need to login with Discord for the bot to work.",
+    "applying": "Applying template...",
+    "applyNow": "Apply Template Now",
+    "successTitle": "Done! 🎉",
+    "successDesc": "Channels and roles were created in your server. The bot has left automatically.",
+    "applyAnother": "Apply to another server",
+    "customizeTemplate": "🎨 Customize Template",
+    "toastSuccess": "✅ Template applied!",
+    "toastSuccessDesc": "Channels and roles created successfully.",
+    "toastError": "Error",
+    "toastErrorDesc": "Failed to apply template."
+  },
+  "admin": {
+    "title": "Admin Panel",
+    "welcome": "Welcome, {{name}}. You can manage the site from here.",
+    "unauthorized": "Insufficient Permissions",
+    "unauthorizedDesc": "Sorry, this page is for site admins only. You don't have the required permissions to access the control panel.",
+    "backHome": "Back to Home",
+    "tabs": {
+      "stats": "Statistics",
+      "add": "Add Template",
+      "templates": "Manage Templates",
+      "admins": "Manage Admins",
+      "settings": "Settings"
+    }
+  },
+  "notFound": {
+    "title": "Page Not Found",
+    "desc": "This page does not exist or has been removed."
+  }
+}
