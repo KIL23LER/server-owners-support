@@ -14,6 +14,7 @@ i18n
     },
     fallbackLng: "ar",
     supportedLngs: ["ar", "en"],
+    initImmediate: false,
     detection: {
       order: ["localStorage", "navigator"],
       caches: ["localStorage"],
