@@ -114,7 +114,7 @@ export function Navbar() {
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56" dir={dir}>
+                <DropdownMenuContent align="end" className="w-56">
                   <div className="flex items-center gap-2 p-2">
                     <div className="flex flex-col space-y-1 leading-none">
                       {user.globalName && <p className="font-medium">{user.globalName}</p>}

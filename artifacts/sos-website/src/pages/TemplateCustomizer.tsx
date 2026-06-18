@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useSearch } from "wouter";
-import { useListTemplates, Template } from "@workspace/api-client-react";
+import { useListTemplates, Template, useGetMyGuilds, useApplyBotTemplate } from "@workspace/api-client-react";
+import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -203,7 +204,10 @@ export default function TemplateCustomizer() {
   const [editChannel, setEditChannel] = useState<ParsedChannel | null>(null);
   const [editCatId, setEditCatId] = useState<string | null>(null);
   const [previewTemplate, setPreviewTemplate] = useState<Template | null>(null);
+  const [selectedGuildId, setSelectedGuildId] = useState<string | null>(null);
+  const [botAdded, setBotAdded] = useState(false);
   const { toast } = useToast();
+  const { user, login } = useAuth();
 
   const { data: templates, isLoading: templatesLoading } = useListTemplates({}, {
     query: { queryKey: ["templates"] },
@@ -591,43 +595,15 @@ export default function TemplateCustomizer() {
       </div>
 
       {/* ── Apply with Bot ───────────────────────────────────────────── */}
-      <div className="mt-10 md:mt-14">
-        <div className="border border-[#5865F2]/30 rounded-2xl overflow-hidden">
-          <div className="bg-[#5865F2]/10 px-5 py-4 border-b border-[#5865F2]/20 flex items-center gap-3">
-            <Bot className="w-5 h-5 text-[#5865F2] shrink-0" />
-            <div>
-              <h2 className="font-bold text-base">طبّق القالب على سيرفرك بالبوت</h2>
-              <p className="text-xs text-muted-foreground mt-0.5">بعد الانتهاء من التخصيص، استخدم بوتنا لتطبيق القالب</p>
-            </div>
-          </div>
-          <div className="p-5">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
-              {[
-                { icon: <Bot className="w-5 h-5 text-[#5865F2]" />, num: "١", title: "أضف البوت", desc: "اضغط الزر أدناه لإضافة البوت بصلاحية مدير السيرفر." },
-                { icon: <Zap className="w-5 h-5 text-yellow-500" />, num: "٢", title: "البوت يطبّق تلقائياً", desc: "بمجرد إضافة البوت، ينشئ القنوات والرتب تلقائياً — بدون أي أوامر." },
-                { icon: <LogOut className="w-5 h-5 text-green-500" />, num: "٣", title: "البوت يخرج تلقائياً", desc: "بعد الانتهاء، يغادر البوت سيرفرك من تلقاء نفسه." },
-              ].map((step) => (
-                <div key={step.num} className="relative bg-muted/40 rounded-xl p-4 border border-border/40">
-                  <div className="absolute -top-2.5 -right-2.5 w-6 h-6 rounded-full bg-[#5865F2] text-white text-[11px] font-bold flex items-center justify-center">{step.num}</div>
-                  <div className="flex items-center gap-2 mb-1.5">{step.icon}<span className="font-semibold text-sm">{step.title}</span></div>
-                  <p className="text-xs text-muted-foreground leading-relaxed">{step.desc}</p>
-                </div>
-              ))}
-            </div>
-            <div className="flex flex-col sm:flex-row gap-3 items-center">
-              <a href={BOT_INVITE} target="_blank" rel="noopener noreferrer" className="w-full sm:w-auto">
-                <Button size="lg" className="bg-[#5865F2] hover:bg-[#4752C4] text-white font-bold gap-2 w-full">
-                  <Bot className="w-5 h-5" />أضف البوت لسيرفرك<ExternalLink className="w-4 h-4" />
-                </Button>
-              </a>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <ShieldCheck className="w-4 h-4 text-green-500 shrink-0" />
-                <span>البوت يغادر تلقائياً بعد تطبيق القالب</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <ApplyWithBot
+        template={selectedTemplate!}
+        user={user}
+        onLogin={login}
+        selectedGuildId={selectedGuildId}
+        setSelectedGuildId={setSelectedGuildId}
+        botAdded={botAdded}
+        setBotAdded={setBotAdded}
+      />
 
       {/* Channel Edit Dialog */}
       {editChannel && (
@@ -659,6 +635,204 @@ export default function TemplateCustomizer() {
           }}
         />
       )}
+    </div>
+  );
+}
+
+// ─── Apply With Bot ───────────────────────────────────────────────────────────
+
+function ApplyWithBot({
+  template, user, onLogin, selectedGuildId, setSelectedGuildId, botAdded, setBotAdded,
+}: {
+  template: Template;
+  user: any;
+  onLogin: () => void;
+  selectedGuildId: string | null;
+  setSelectedGuildId: (id: string | null) => void;
+  botAdded: boolean;
+  setBotAdded: (v: boolean) => void;
+}) {
+  const { toast } = useToast();
+  const applyBot = useApplyBotTemplate();
+  const [applyState, setApplyState] = useState<"idle" | "applying" | "done" | "error">("idle");
+
+  const { data: guilds, isLoading: guildsLoading } = useGetMyGuilds({
+    query: { queryKey: ["my-guilds"], enabled: !!user, retry: 1 },
+  });
+
+  const selectedGuild = guilds?.find((g) => g.id === selectedGuildId);
+  const botInviteUrl = selectedGuildId
+    ? `${BOT_INVITE}&guild_id=${selectedGuildId}&disable_guild_select=true`
+    : BOT_INVITE;
+
+  const handleApply = () => {
+    if (!selectedGuildId || !template) return;
+    setApplyState("applying");
+    applyBot.mutate(
+      { data: { guildId: selectedGuildId, templateId: template.id } },
+      {
+        onSuccess: () => {
+          setApplyState("done");
+          toast({ title: "✅ تم تطبيق القالب!", description: "البوت طبّق القالب وغادر السيرفر تلقائياً." });
+        },
+        onError: (err: any) => {
+          setApplyState("error");
+          toast({ variant: "destructive", title: "فشل التطبيق", description: err?.message || "حدث خطأ أثناء تطبيق القالب." });
+        },
+      },
+    );
+  };
+
+  return (
+    <div className="mt-10 md:mt-14">
+      <div className="border border-[#5865F2]/30 rounded-2xl overflow-hidden">
+        <div className="bg-[#5865F2]/10 px-5 py-4 border-b border-[#5865F2]/20 flex items-center gap-3">
+          <Bot className="w-5 h-5 text-[#5865F2] shrink-0" />
+          <div>
+            <h2 className="font-bold text-base">طبّق القالب على سيرفرك بالبوت</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">اختر سيرفرك، أضف البوت، ثم اضغط تطبيق</p>
+          </div>
+        </div>
+        <div className="p-5 space-y-5">
+
+          {/* Steps */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {[
+              { icon: <Users className="w-5 h-5 text-[#5865F2]" />, num: "١", title: "اختر سيرفرك", desc: "سجّل دخولك واختر السيرفر الذي تريد تطبيق القالب عليه.", done: !!selectedGuildId },
+              { icon: <Bot className="w-5 h-5 text-yellow-500" />, num: "٢", title: "أضف البوت", desc: "اضغط زر إضافة البوت — سيُضاف مباشرة للسيرفر المختار.", done: botAdded },
+              { icon: <Zap className="w-5 h-5 text-green-500" />, num: "٣", title: "طبّق القالب", desc: "اضغط تطبيق القالب — البوت ينشئ القنوات والرتب ثم يغادر تلقائياً.", done: applyState === "done" },
+            ].map((step) => (
+              <div key={step.num} className={`relative rounded-xl p-4 border transition-colors ${step.done ? "border-green-500/40 bg-green-500/5" : "border-border/40 bg-muted/40"}`}>
+                <div className={`absolute -top-2.5 -right-2.5 w-6 h-6 rounded-full text-white text-[11px] font-bold flex items-center justify-center ${step.done ? "bg-green-500" : "bg-[#5865F2]"}`}>
+                  {step.done ? "✓" : step.num}
+                </div>
+                <div className="flex items-center gap-2 mb-1.5">{step.icon}<span className="font-semibold text-sm">{step.title}</span></div>
+                <p className="text-xs text-muted-foreground leading-relaxed">{step.desc}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Not logged in */}
+          {!user && (
+            <div className="rounded-xl border border-dashed border-[#5865F2]/40 bg-[#5865F2]/5 p-5 text-center">
+              <p className="text-sm font-medium mb-3">سجّل دخولك بديسكورد لاختيار سيرفرك</p>
+              <Button onClick={onLogin} className="bg-[#5865F2] hover:bg-[#4752C4] text-white font-bold gap-2">
+                <Bot className="w-4 h-4" /> تسجيل الدخول بديسكورد
+              </Button>
+            </div>
+          )}
+
+          {/* Guild selector */}
+          {user && (
+            <div className="space-y-3">
+              <p className="text-sm font-semibold">اختر السيرفر:</p>
+              {guildsLoading ? (
+                <div className="flex gap-2 flex-wrap">
+                  {[1,2,3].map(i => <Skeleton key={i} className="h-10 w-32 rounded-lg" />)}
+                </div>
+              ) : guilds && guilds.length > 0 ? (
+                <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto">
+                  {guilds.map((g) => (
+                    <button
+                      key={g.id}
+                      onClick={() => { setSelectedGuildId(g.id); setBotAdded(false); setApplyState("idle"); }}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-all ${
+                        selectedGuildId === g.id
+                          ? "border-[#5865F2] bg-[#5865F2]/10 text-[#5865F2] font-bold"
+                          : "border-border/50 hover:border-[#5865F2]/40 bg-muted/30"
+                      }`}
+                    >
+                      {g.icon ? (
+                        <img src={`https://cdn.discordapp.com/icons/${g.id}/${g.icon}.webp?size=32`} className="w-5 h-5 rounded-full" alt="" />
+                      ) : (
+                        <div className="w-5 h-5 rounded-full bg-[#5865F2]/20 flex items-center justify-center text-[10px] font-bold text-[#5865F2]">
+                          {g.name.charAt(0)}
+                        </div>
+                      )}
+                      <span className="truncate max-w-[140px]">{g.name}</span>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">لا توجد سيرفرات تملك فيها صلاحية المدير.</p>
+              )}
+            </div>
+          )}
+
+          {/* Step 2: Add bot button */}
+          {selectedGuild && (
+            <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center rounded-xl border border-border/50 bg-muted/30 p-4">
+              <div className="flex-1">
+                <p className="text-sm font-semibold">أضف البوت لـ "{selectedGuild.name}"</p>
+                <p className="text-xs text-muted-foreground mt-0.5">سيفتح رابط ديسكورد مباشرةً للسيرفر المختار</p>
+              </div>
+              <a
+                href={botInviteUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setBotAdded(true)}
+              >
+                <Button className="bg-[#5865F2] hover:bg-[#4752C4] text-white font-bold gap-2 whitespace-nowrap">
+                  <Bot className="w-4 h-4" />
+                  {botAdded ? "أُضيف البوت ✓" : "أضف البوت"}
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </Button>
+              </a>
+            </div>
+          )}
+
+          {/* Step 3: Apply button */}
+          {selectedGuild && botAdded && applyState !== "done" && (
+            <div className="rounded-xl border border-green-500/30 bg-green-500/5 p-4 flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-green-700 dark:text-green-400">البوت جاهز — طبّق القالب الآن</p>
+                <p className="text-xs text-muted-foreground mt-0.5">سيُنشئ البوت القنوات والرتب ثم يغادر تلقائياً</p>
+              </div>
+              <Button
+                onClick={handleApply}
+                disabled={applyState === "applying"}
+                className="bg-green-600 hover:bg-green-700 text-white font-bold gap-2 whitespace-nowrap"
+              >
+                {applyState === "applying" ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> جاري التطبيق...</>
+                ) : (
+                  <><Zap className="w-4 h-4" /> تطبيق القالب</>
+                )}
+              </Button>
+            </div>
+          )}
+
+          {/* Error state */}
+          {applyState === "error" && (
+            <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 flex items-center gap-3">
+              <AlertCircle className="w-5 h-5 text-destructive shrink-0" />
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-destructive">فشل التطبيق</p>
+                <p className="text-xs text-muted-foreground">تحقق من أن البوت مضاف للسيرفر بصلاحية مدير، ثم أعد المحاولة.</p>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => setApplyState("idle")}>إعادة المحاولة</Button>
+            </div>
+          )}
+
+          {/* Success state */}
+          {applyState === "done" && (
+            <div className="rounded-xl border border-green-500/40 bg-green-500/10 p-4 flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center shrink-0">
+                <Check className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-green-700 dark:text-green-400">تم تطبيق القالب بنجاح! 🎉</p>
+                <p className="text-xs text-muted-foreground">البوت أنشأ القنوات والرتب وغادر السيرفر تلقائياً.</p>
+              </div>
+            </div>
+          )}
+
+          <div className="flex items-center gap-2 text-xs text-muted-foreground pt-1">
+            <ShieldCheck className="w-4 h-4 text-green-500 shrink-0" />
+            <span>البوت يغادر تلقائياً بعد التطبيق — لا يبقى في سيرفرك</span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

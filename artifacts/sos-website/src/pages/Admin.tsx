@@ -46,7 +46,7 @@ export default function Admin() {
         </div>
       </div>
 
-      <Tabs defaultValue="stats" className="w-full" dir={t("dir")}>
+      <Tabs defaultValue="stats" className="w-full" dir={t("dir") as "rtl" | "ltr"}>
         <TabsList className="grid w-full grid-cols-5 mb-8 bg-muted/50 p-1">
           <TabsTrigger value="stats" className="flex items-center gap-2 data-[state=active]:bg-background">
             <BarChart3 className="h-4 w-4 hidden sm:block" />

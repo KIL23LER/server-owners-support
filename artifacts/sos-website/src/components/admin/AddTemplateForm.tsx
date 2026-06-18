@@ -53,7 +53,7 @@ export default function AddTemplateForm() {
       data: {
         name: data.name,
         description: data.description,
-        imageUrl: data.imageUrl || null,
+        imageUrl: data.imageUrl || undefined,
         templateCode: data.templateCode,
         category: data.category,
         featured: data.featured,

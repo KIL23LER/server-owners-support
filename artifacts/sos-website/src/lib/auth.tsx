@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
-import { useGetMe, useLogout, getGetMeQueryKey, User, setAuthTokenGetter } from "@workspace/api-client-react";
+import { useGetMe, useLogout, getGetMeQueryKey, type AuthUser as User, setAuthTokenGetter } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
