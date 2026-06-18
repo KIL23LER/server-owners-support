@@ -16,7 +16,7 @@ i18n
     supportedLngs: ["ar", "en"],
     initImmediate: false,
     detection: {
-      order: ["localStorage", "navigator"],
+      order: ["localStorage"],
       caches: ["localStorage"],
       lookupLocalStorage: "sos-lang",
     },
