@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dialog";
 
 const APP_ID = "1510614634111963156";
-const BOT_INVITE = `https://discord.com/oauth2/authorize?client_id=${APP_ID}&permissions=8&scope=bot%20applications.commands`;
+const BOT_INVITE = `https://discord.com/oauth2/authorize?client_id=${APP_ID}&permissions=8&scope=bot`;
 
 export default function Templates() {
   const [searchTerm, setSearchTerm] = useState("");
