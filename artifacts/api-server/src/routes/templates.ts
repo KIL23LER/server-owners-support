@@ -14,7 +14,7 @@ router.get("/templates", async (req, res) => {
 });
 
 router.get("/templates/:id", async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(req.params.id as string);
   if (isNaN(id)) return res.status(400).json({ error: "معرف غير صالح" });
   const [template] = await db.select().from(templatesTable).where(eq(templatesTable.id, id)).limit(1);
   if (!template) return res.status(404).json({ error: "القالب غير موجود" });
@@ -41,7 +41,7 @@ router.post("/templates", requireAdmin, async (req, res) => {
 });
 
 router.put("/templates/:id", requireAdmin, async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(req.params.id as string);
   if (isNaN(id)) return res.status(400).json({ error: "معرف غير صالح" });
 
   const { name, description, imageUrl, templateCode, category, featured } = req.body;
@@ -60,7 +60,7 @@ router.put("/templates/:id", requireAdmin, async (req, res) => {
 });
 
 router.delete("/templates/:id", requireAdmin, async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(req.params.id as string);
   if (isNaN(id)) return res.status(400).json({ error: "معرف غير صالح" });
   await db.delete(templatesTable).where(eq(templatesTable.id, id));
   return res.json({ success: true });
