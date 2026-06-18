@@ -75,6 +75,7 @@ interface CustomizationState {
 
 const APP_ID = "1510614634111963156";
 const BOT_INVITE = `https://discord.com/oauth2/authorize?client_id=${APP_ID}&permissions=8&scope=bot`;
+const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 const POPULAR_EMOJIS = [
   "📋","📢","👋","🎖️","💬","🖼️","🔗","🎭","❓","🎫","🚨","🎙️","🎵","💤",
@@ -225,7 +226,7 @@ export default function TemplateCustomizer() {
     setFetchState("loading");
     setCollapsedCats({});
     try {
-      const res = await fetch(`/api/discord-template/${template.templateCode}`);
+      const res = await fetch(`${BASE}/api/discord-template/${template.templateCode}`);
       if (!res.ok) throw new Error("not found");
       const data = await res.json();
       const parsed = parseDiscordTemplate(data);
@@ -505,8 +506,8 @@ export default function TemplateCustomizer() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
               {[
                 { icon: <Bot className="w-5 h-5 text-[#5865F2]" />, num: "١", title: "أضف البوت", desc: "اضغط الزر أدناه لإضافة البوت بصلاحية مدير السيرفر." },
-                { icon: <Zap className="w-5 h-5 text-yellow-500" />, num: "٢", title: "شغّل الأمر", desc: "اكتب في سيرفرك: /setup-template وأكّد." },
-                { icon: <LogOut className="w-5 h-5 text-green-500" />, num: "٣", title: "البوت يخرج تلقائياً", desc: "ينشئ القنوات والرتب ثم يغادر من تلقاء نفسه." },
+                { icon: <Zap className="w-5 h-5 text-yellow-500" />, num: "٢", title: "البوت يطبّق تلقائياً", desc: "بمجرد إضافة البوت، ينشئ القنوات والرتب تلقائياً — بدون أي أوامر." },
+                { icon: <LogOut className="w-5 h-5 text-green-500" />, num: "٣", title: "البوت يخرج تلقائياً", desc: "بعد الانتهاء، يغادر البوت سيرفرك من تلقاء نفسه." },
               ].map((step) => (
                 <div key={step.num} className="relative bg-muted/40 rounded-xl p-4 border border-border/40">
                   <div className="absolute -top-2.5 -right-2.5 w-6 h-6 rounded-full bg-[#5865F2] text-white text-[11px] font-bold flex items-center justify-center">{step.num}</div>
