@@ -16,12 +16,11 @@ const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 function buildInviteUrl(templateId: number): string {
   const redirectUri = encodeURIComponent(`${window.location.origin}${BASE}/bot`);
   return (
-    `https://discord.com/api/oauth2/authorize` +
+    `https://discord.com/oauth2/authorize` +
     `?client_id=${APP_ID}` +
     `&permissions=8` +
     `&scope=bot` +
     `&redirect_uri=${redirectUri}` +
-    `&response_type=code` +
     `&state=${templateId}`
   );
 }
