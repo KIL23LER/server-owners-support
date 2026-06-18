@@ -50,9 +50,19 @@
     "featured": "Featured",
     "loginToApply": "Login to Apply Template",
     "applyToServer": "Apply to My Server",
+    "customize": "Customize",
     "applyDialog": {
       "title": "Apply template: {{name}}",
-      "description": "Click your server and Discord will open — choose \"Apply to Existing Server\" then select your server.",
+      "addBot": "Add Bot",
+      "step1Title": "Add the Bot to Your Server",
+      "step1Desc": "Click the button below and add the bot with Server Administrator permission.",
+      "step2Title": "Bot Applies the Template Automatically",
+      "step2Desc": "Once added, the bot immediately creates all channels and roles from the template — no commands needed.",
+      "step3Title": "Bot Leaves Automatically",
+      "step3Desc": "After finishing, the bot leaves your server on its own. It won't stay or monitor you.",
+      "safetyNote": "The bot doesn't monitor your server — it only enters to apply the template then leaves automatically.",
+      "customize": "Customize Emojis & Colors",
+      "close": "Close",
       "noGuilds": "You have no servers with admin permissions.",
       "openInDiscord": "Open Template in Discord",
       "change": "Change",
@@ -93,6 +103,20 @@
     "toastSuccessDesc": "Channels and roles created successfully.",
     "toastError": "Error",
     "toastErrorDesc": "Failed to apply template."
+  },
+  "admin": {
+    "title": "Admin Panel",
+    "welcome": "Welcome, {{name}}. You can manage the site from here.",
+    "unauthorized": "Insufficient Permissions",
+    "unauthorizedDesc": "Sorry, this page is for site admins only. You don't have the required permissions to access the control panel.",
+    "backHome": "Back to Home",
+    "tabs": {
+      "stats": "Statistics",
+      "add": "Add Template",
+      "templates": "Manage Templates",
+      "admins": "Manage Admins",
+      "settings": "Settings"
+    }
   },
   "notFound": {
     "title": "Page Not Found",
