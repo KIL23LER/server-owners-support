@@ -1,13 +1,13 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { useGetMe, useLogout, getGetMeQueryKey, User, setAuthTokenGetter } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   login: () => void;
   logout: () => void;
-  loginError: string | null;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -15,7 +15,6 @@ const AuthContext = createContext<AuthContextType>({
   isLoading: true,
   login: () => {},
   logout: () => {},
-  loginError: null,
 });
 
 function getStoredToken(): string | null {
@@ -46,7 +45,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (stored) setAuthTokenGetter(() => stored);
     return stored;
   });
-  const [loginError, setLoginError] = useState<string | null>(null);
 
   const queryClient = useQueryClient();
 
@@ -57,7 +55,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (sessionToken) {
       saveToken(sessionToken);
       setToken(sessionToken);
-      setLoginError(null);
       window.history.replaceState({}, "", window.location.pathname);
       window.location.replace("/templates");
       return;
@@ -67,8 +64,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (errorCode) {
       const step = params.get("step") || "";
       const detail = params.get("detail") || "";
-      const msg = `فشل تسجيل الدخول [${errorCode}${step ? " @ " + step : ""}]${detail ? ": " + detail : ""}`;
-      setLoginError(msg);
+      const msg = `فشل تسجيل الدخول (${errorCode}${step ? " - " + step : ""})${detail ? ": " + decodeURIComponent(detail) : ""}`;
+      toast.error(msg, { duration: 10000, id: "login-error" });
       window.history.replaceState({}, "", window.location.pathname);
     }
   }, []);
@@ -92,7 +89,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [error, token, queryClient]);
 
   const login = useCallback(() => {
-    setLoginError(null);
     window.location.href = "/api/auth/login";
   }, []);
 
@@ -116,7 +112,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isLoading: isUserLoading && !!token,
         login,
         logout,
-        loginError,
       }}
     >
       {children}
