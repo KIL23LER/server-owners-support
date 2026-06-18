@@ -97,7 +97,7 @@ export default defineConfig({
             "@radix-ui/react-toggle-group",
             "@radix-ui/react-tooltip",
           ],
-          "vendor-misc": ["framer-motion", "recharts", "react-hook-form", "wouter", "sonner", "lucide-react"],
+          "vendor-misc": ["framer-motion", "react-hook-form", "wouter", "sonner", "lucide-react"],
         },
       },
     },
