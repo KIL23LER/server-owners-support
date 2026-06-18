@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useListTemplates, useGetInvite } from "@workspace/api-client-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Users, Shield, Star, Award, MessageSquare, LayoutTemplate } from "lucide-react";
+import { Users, Shield, Star, Award, MessageSquare, LayoutTemplate, Bot, CheckCircle2, Zap, ShieldCheck } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 export default function Home() {
@@ -26,6 +26,7 @@ export default function Home() {
 
   return (
     <div className="flex flex-col min-h-[calc(100vh-4rem)]">
+      {/* Hero */}
       <section className="relative overflow-hidden bg-primary/5 py-24 lg:py-32">
         <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 opacity-10">
           <img
@@ -59,6 +60,39 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Bot Banner */}
+      <section className="py-12 px-4 bg-gradient-to-r from-[#5865F2]/10 via-[#5865F2]/5 to-transparent border-y border-[#5865F2]/20">
+        <div className="container mx-auto max-w-5xl">
+          <div className="flex flex-col md:flex-row items-center gap-8">
+            <div className="flex-shrink-0 w-20 h-20 rounded-2xl bg-[#5865F2]/15 flex items-center justify-center border border-[#5865F2]/30">
+              <Bot className="w-10 h-10 text-[#5865F2]" />
+            </div>
+            <div className="flex-1 text-center md:text-start">
+              <div className="inline-flex items-center gap-2 bg-[#5865F2]/10 text-[#5865F2] text-xs font-bold px-3 py-1 rounded-full mb-2 border border-[#5865F2]/20">
+                <Zap className="w-3 h-3" />
+                {t("home.botBadge")}
+              </div>
+              <h2 className="text-2xl font-bold mb-2">{t("home.botTitle")}</h2>
+              <p className="text-muted-foreground mb-4 max-w-xl">{t("home.botDesc")}</p>
+              <div className="flex flex-wrap gap-3 justify-center md:justify-start text-sm text-muted-foreground mb-4">
+                <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-green-500" />{t("home.botFeat1")}</span>
+                <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-green-500" />{t("home.botFeat2")}</span>
+                <span className="flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-green-500" />{t("home.botFeat3")}</span>
+              </div>
+            </div>
+            <div className="flex-shrink-0">
+              <Button asChild size="lg" className="bg-[#5865F2] hover:bg-[#4752C4] text-white font-bold h-12 px-6 gap-2 shadow-lg">
+                <Link href="/bot">
+                  <Bot className="w-5 h-5" />
+                  {t("home.botCta")}
+                </Link>
+              </Button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Community Sections */}
       <section className="py-20 bg-background">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
@@ -85,6 +119,7 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Featured Templates */}
       <section className="py-20 bg-muted/30">
         <div className="container mx-auto px-4">
           <div className="flex justify-between items-end mb-12">
@@ -129,7 +164,7 @@ export default function Home() {
                       {template.description}
                     </p>
                     <Button asChild className="w-full">
-                      <Link href="/templates">{t("home.viewDetails")}</Link>
+                      <Link href="/bot">{t("home.applyWithBot")}</Link>
                     </Button>
                   </CardContent>
                 </Card>
