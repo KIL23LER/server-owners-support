@@ -125,4 +125,26 @@ router.delete("/templates/:id", requireAdmin, async (req, res) => {
   res.json({ success: true });
 });
 
+// ── Discord Template Proxy ──────────────────────────────────────────────────
+router.get("/discord-template/:code", async (req, res) => {
+  const { code } = req.params;
+  if (!code || !/^[a-zA-Z0-9]+$/.test(code)) {
+    res.status(400).json({ error: "كود القالب غير صالح" });
+    return;
+  }
+  try {
+    const resp = await fetch(`https://discord.com/api/v10/guilds/templates/${code}`, {
+      headers: { "User-Agent": "SOS-Website/1.0" },
+    });
+    if (!resp.ok) {
+      res.status(resp.status).json({ error: "لم يتم العثور على القالب في Discord" });
+      return;
+    }
+    const data = await resp.json();
+    res.json(data);
+  } catch {
+    res.status(502).json({ error: "تعذّر الاتصال بـ Discord" });
+  }
+});
+
 export default router;

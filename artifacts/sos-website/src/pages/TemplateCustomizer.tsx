@@ -1,7 +1,10 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { useSearch } from "wouter";
+import { useListTemplates, Template } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
@@ -22,206 +25,384 @@ import {
   ChevronRight,
   Pencil,
   RotateCcw,
-  Copy,
   Check,
   Palette,
   FolderOpen,
   LayoutList,
+  Bot,
+  Zap,
+  LogOut,
+  ShieldCheck,
+  ExternalLink,
+  LayoutTemplate,
+  ArrowRight,
+  AlertCircle,
+  Loader2,
 } from "lucide-react";
 
-// ─── Default Template Data ───────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────────
 
-interface Channel {
+interface ParsedChannel {
   id: string;
   name: string;
   emoji: string;
   type: "text" | "voice";
 }
 
-interface Category {
+interface ParsedCategory {
   id: string;
   name: string;
-  channels: Channel[];
+  channels: ParsedChannel[];
 }
 
-interface Role {
+interface ParsedRole {
   id: string;
   name: string;
   color: string;
 }
 
-const DEFAULT_CATEGORIES: Category[] = [
-  {
-    id: "cat-info",
-    name: "📌 المعلومات",
-    channels: [
-      { id: "ch-rules", name: "القوانين", emoji: "📋", type: "text" },
-      { id: "ch-announce", name: "الإعلانات", emoji: "📢", type: "text" },
-      { id: "ch-welcome", name: "الترحيب", emoji: "👋", type: "text" },
-      { id: "ch-roles", name: "الرتب", emoji: "🎖️", type: "text" },
-    ],
-  },
-  {
-    id: "cat-general",
-    name: "💬 العام",
-    channels: [
-      { id: "ch-chat", name: "الدردشة", emoji: "💬", type: "text" },
-      { id: "ch-media", name: "الصور والميديا", emoji: "🖼️", type: "text" },
-      { id: "ch-links", name: "الروابط", emoji: "🔗", type: "text" },
-      { id: "ch-off", name: "أوف توبيك", emoji: "🎭", type: "text" },
-    ],
-  },
-  {
-    id: "cat-support",
-    name: "🛠️ الدعم",
-    channels: [
-      { id: "ch-help", name: "طلبات المساعدة", emoji: "❓", type: "text" },
-      { id: "ch-ticket", name: "التذاكر", emoji: "🎫", type: "text" },
-      { id: "ch-report", name: "الإبلاغ", emoji: "🚨", type: "text" },
-    ],
-  },
-  {
-    id: "cat-voice",
-    name: "🔊 الصوتيات",
-    channels: [
-      { id: "vc-general", name: "الغرفة العامة", emoji: "🎙️", type: "voice" },
-      { id: "vc-music", name: "الموسيقى", emoji: "🎵", type: "voice" },
-      { id: "vc-afk", name: "المنتظرون", emoji: "💤", type: "voice" },
-    ],
-  },
-];
-
-const DEFAULT_ROLES: Role[] = [
-  { id: "role-owner", name: "المالك", color: "#FFD700" },
-  { id: "role-coadmin", name: "المدير التنفيذي", color: "#FF6B6B" },
-  { id: "role-admin", name: "المدير", color: "#FF4757" },
-  { id: "role-mod", name: "المشرف", color: "#2ED573" },
-  { id: "role-helper", name: "المساعد", color: "#1E90FF" },
-  { id: "role-vip", name: "العضو المميز", color: "#A55EEA" },
-  { id: "role-member", name: "العضو", color: "#B2BEC3" },
-  { id: "role-new", name: "الجديد", color: "#636E72" },
-];
-
-const STORAGE_KEY = "sos-template-customization";
+interface ParsedTemplate {
+  categories: ParsedCategory[];
+  roles: ParsedRole[];
+}
 
 interface CustomizationState {
   channelEmojis: Record<string, string>;
   roleColors: Record<string, string>;
 }
 
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const APP_ID = "1510614634111963156";
+const BOT_INVITE = `https://discord.com/oauth2/authorize?client_id=${APP_ID}&permissions=8&scope=bot%20applications.commands`;
+
 const POPULAR_EMOJIS = [
   "📋","📢","👋","🎖️","💬","🖼️","🔗","🎭","❓","🎫","🚨","🎙️","🎵","💤",
   "⭐","🔥","💡","🎮","🏆","📌","🌟","✅","❌","🎉","🛡️","⚔️","🌈","💎",
-  "🚀","🎯","📣","🔔","🔇","📝","🗂️","📁","📂","🗃️","🗄️","🔒","🔓",
-  "💰","🎲","🃏","🎸","🎤","📺","📻","🎬","🎧","🖥️","💻","📱",
+  "🚀","🎯","📣","🔔","📝","🗂️","📁","🔒","🔓","💰","🎲","🎸","🎤","📺",
 ];
 
-// ─── LocalStorage helpers ─────────────────────────────────────────────────────
+const PRESET_COLORS = [
+  "#FFD700","#FF6B6B","#FF4757","#2ED573","#1E90FF","#A55EEA","#FFA502",
+  "#FF6348","#26de81","#45aaf2","#fd9644","#B2BEC3","#636E72",
+  "#00cec9","#fdcb6e","#e17055","#74b9ff","#55efc4","#fab1a0","#ffffff",
+];
 
-function loadCustomization(): CustomizationState {
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function intToHex(color: number): string {
+  if (!color) return "#636E72";
+  return "#" + color.toString(16).padStart(6, "0");
+}
+
+function guessEmoji(name: string): string {
+  const n = name.toLowerCase();
+  if (n.includes("rule") || n.includes("قانون")) return "📋";
+  if (n.includes("announce") || n.includes("إعلان")) return "📢";
+  if (n.includes("welcome") || n.includes("ترحيب")) return "👋";
+  if (n.includes("role") || n.includes("رتب")) return "🎖️";
+  if (n.includes("general") || n.includes("عام") || n.includes("دردشة")) return "💬";
+  if (n.includes("media") || n.includes("صور") || n.includes("ميديا")) return "🖼️";
+  if (n.includes("link") || n.includes("روابط")) return "🔗";
+  if (n.includes("off") || n.includes("meme") || n.includes("ميم")) return "🎭";
+  if (n.includes("help") || n.includes("support") || n.includes("مساعدة")) return "❓";
+  if (n.includes("ticket") || n.includes("تذكرة")) return "🎫";
+  if (n.includes("report") || n.includes("إبلاغ")) return "🚨";
+  if (n.includes("music") || n.includes("موسيقى")) return "🎵";
+  if (n.includes("voice") || n.includes("صوت")) return "🎙️";
+  if (n.includes("afk") || n.includes("منتظر")) return "💤";
+  if (n.includes("game") || n.includes("ألعاب")) return "🎮";
+  if (n.includes("admin") || n.includes("staff") || n.includes("إدارة")) return "🛡️";
+  if (n.includes("bot") || n.includes("بوت")) return "🤖";
+  if (n.includes("news") || n.includes("أخبار")) return "📰";
+  if (n.includes("log")) return "📝";
+  return "💬";
+}
+
+function parseDiscordTemplate(data: any): ParsedTemplate {
+  const guild = data?.serialized_source_guild ?? data;
+  const rawChannels: any[] = guild?.channels ?? [];
+  const rawRoles: any[] = guild?.roles ?? [];
+
+  // Build category map
+  const categoryMap: Record<number, ParsedCategory> = {};
+  const uncategorized: ParsedChannel[] = [];
+
+  // First pass: categories
+  rawChannels
+    .filter((c) => c.type === 4)
+    .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+    .forEach((c) => {
+      categoryMap[c.id] = {
+        id: String(c.id),
+        name: c.name,
+        channels: [],
+      };
+    });
+
+  // Second pass: channels
+  rawChannels
+    .filter((c) => c.type !== 4)
+    .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+    .forEach((c) => {
+      const ch: ParsedChannel = {
+        id: String(c.id),
+        name: c.name.replace(/^[^\w\u0600-\u06FF\s]+[\s・\-_]?/, "").trim() || c.name,
+        emoji: guessEmoji(c.name),
+        type: c.type === 2 ? "voice" : "text",
+      };
+      if (c.parent_id != null && categoryMap[c.parent_id]) {
+        categoryMap[c.parent_id].channels.push(ch);
+      } else {
+        uncategorized.push(ch);
+      }
+    });
+
+  const categories = Object.values(categoryMap).filter((c) => c.channels.length > 0);
+  if (uncategorized.length > 0) {
+    categories.push({ id: "uncategorized", name: "📌 قنوات أخرى", channels: uncategorized });
+  }
+
+  const roles: ParsedRole[] = rawRoles
+    .filter((r) => r.id !== 0 && r.name !== "@everyone")
+    .map((r) => ({
+      id: String(r.id),
+      name: r.name,
+      color: intToHex(r.color),
+    }));
+
+  return { categories, roles };
+}
+
+function storageKey(templateId: number) {
+  return `sos-custom-${templateId}`;
+}
+
+function loadCustomization(templateId: number): CustomizationState {
   try {
-    const stored = localStorage.getItem(STORAGE_KEY);
+    const stored = localStorage.getItem(storageKey(templateId));
     if (stored) return JSON.parse(stored);
   } catch {}
   return { channelEmojis: {}, roleColors: {} };
 }
 
-function saveCustomization(state: CustomizationState) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+function saveCustomization(templateId: number, state: CustomizationState) {
+  localStorage.setItem(storageKey(templateId), JSON.stringify(state));
 }
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function TemplateCustomizer() {
-  const [customization, setCustomization] = useState<CustomizationState>(loadCustomization);
+  const search = useSearch();
+  const params = new URLSearchParams(search);
+  const preselectedId = params.get("id") ? parseInt(params.get("id")!) : null;
+
+  const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
+  const [parsedTemplate, setParsedTemplate] = useState<ParsedTemplate | null>(null);
+  const [fetchState, setFetchState] = useState<"idle" | "loading" | "error">("idle");
+  const [customization, setCustomization] = useState<CustomizationState>({ channelEmojis: {}, roleColors: {} });
   const [collapsedCats, setCollapsedCats] = useState<Record<string, boolean>>({});
-  const [editChannel, setEditChannel] = useState<Channel | null>(null);
+  const [editChannel, setEditChannel] = useState<ParsedChannel | null>(null);
   const [editCatId, setEditCatId] = useState<string | null>(null);
   const { toast } = useToast();
 
+  const { data: templates, isLoading: templatesLoading } = useListTemplates({}, {
+    query: { queryKey: ["templates"] },
+  });
+
+  // Preselect from URL param
   useEffect(() => {
-    saveCustomization(customization);
-  }, [customization]);
+    if (preselectedId && templates && !selectedTemplate) {
+      const t = templates.find((t) => t.id === preselectedId);
+      if (t) handleSelectTemplate(t);
+    }
+  }, [preselectedId, templates]);
 
-  const getChannelEmoji = (channelId: string, defaultEmoji: string) =>
-    customization.channelEmojis[channelId] ?? defaultEmoji;
+  const handleSelectTemplate = useCallback(async (template: Template) => {
+    setSelectedTemplate(template);
+    setCustomization(loadCustomization(template.id));
+    setParsedTemplate(null);
+    setFetchState("loading");
+    setCollapsedCats({});
+    try {
+      const res = await fetch(`/api/discord-template/${template.templateCode}`);
+      if (!res.ok) throw new Error("not found");
+      const data = await res.json();
+      const parsed = parseDiscordTemplate(data);
+      setParsedTemplate(parsed);
+      setFetchState("idle");
+    } catch {
+      setFetchState("error");
+    }
+  }, []);
 
-  const getRoleColor = (roleId: string, defaultColor: string) =>
-    customization.roleColors[roleId] ?? defaultColor;
+  const updateCustomization = (updater: (prev: CustomizationState) => CustomizationState) => {
+    setCustomization((prev) => {
+      const next = updater(prev);
+      if (selectedTemplate) saveCustomization(selectedTemplate.id, next);
+      return next;
+    });
+  };
 
   const resetAll = () => {
-    setCustomization({ channelEmojis: {}, roleColors: {} });
+    updateCustomization(() => ({ channelEmojis: {}, roleColors: {} }));
     toast({ title: "تم إعادة الضبط", description: "تمت إعادة كل الإعدادات للافتراضي." });
   };
 
-  const toggleCat = (catId: string) =>
-    setCollapsedCats((prev) => ({ ...prev, [catId]: !prev[catId] }));
+  const getChannelEmoji = (ch: ParsedChannel) =>
+    customization.channelEmojis[ch.id] ?? ch.emoji;
 
+  const getRoleColor = (role: ParsedRole) =>
+    customization.roleColors[role.id] ?? role.color;
+
+  // ── Step 1: Template Picker ─────────────────────────────────────────────────
+  if (!selectedTemplate) {
+    return (
+      <div dir="rtl" className="container mx-auto px-4 py-8 md:py-12 max-w-5xl">
+        <div className="text-center mb-8">
+          <h1 className="text-2xl md:text-3xl font-extrabold mb-2">تخصيص قالب السيرفر</h1>
+          <p className="text-sm text-muted-foreground">اختر أحد قوالبنا لتعديل إيموجيات القنوات وألوان الرتب</p>
+        </div>
+
+        {templatesLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="space-y-3">
+                <Skeleton className="h-32 w-full rounded-xl" />
+                <Skeleton className="h-5 w-2/3" />
+                <Skeleton className="h-9 w-full rounded-md" />
+              </div>
+            ))}
+          </div>
+        ) : templates && templates.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {templates.map((t) => (
+              <div
+                key={t.id}
+                className="border border-border/60 rounded-xl overflow-hidden hover:border-primary/50 hover:shadow-md transition-all cursor-pointer group"
+                onClick={() => handleSelectTemplate(t)}
+              >
+                {t.imageUrl ? (
+                  <div className="h-32 overflow-hidden bg-muted">
+                    <img src={t.imageUrl} alt={t.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                  </div>
+                ) : (
+                  <div className="h-32 bg-primary/5 flex items-center justify-center border-b border-border/40">
+                    <LayoutTemplate className="h-12 w-12 text-primary/20" />
+                  </div>
+                )}
+                <div className="p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <Badge variant="secondary" className="text-xs bg-primary/10 text-primary">{t.category}</Badge>
+                    {t.featured && <Badge className="text-xs bg-amber-500">مميز</Badge>}
+                  </div>
+                  <h3 className="font-bold text-sm mb-1 line-clamp-1">{t.name}</h3>
+                  <p className="text-xs text-muted-foreground line-clamp-2 mb-3">{t.description}</p>
+                  <Button size="sm" className="w-full gap-1.5 group-hover:bg-primary text-xs">
+                    <Pencil className="w-3.5 h-3.5" />
+                    تخصيص هذا القالب
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-20">
+            <LayoutTemplate className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
+            <p className="text-muted-foreground">لا توجد قوالب منشورة بعد.</p>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ── Loading State ───────────────────────────────────────────────────────────
+  if (fetchState === "loading") {
+    return (
+      <div dir="rtl" className="container mx-auto px-4 py-20 flex flex-col items-center gap-4">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+        <p className="text-muted-foreground text-sm">جاري تحميل محتوى القالب من Discord...</p>
+      </div>
+    );
+  }
+
+  // ── Error State ─────────────────────────────────────────────────────────────
+  if (fetchState === "error") {
+    return (
+      <div dir="rtl" className="container mx-auto px-4 py-20 flex flex-col items-center gap-4 text-center">
+        <AlertCircle className="h-10 w-10 text-destructive" />
+        <h2 className="font-bold text-lg">تعذّر تحميل القالب</h2>
+        <p className="text-muted-foreground text-sm max-w-sm">
+          ربما كود القالب منتهي الصلاحية أو غير صالح. جرّب قالباً آخر.
+        </p>
+        <Button variant="outline" onClick={() => setSelectedTemplate(null)}>
+          العودة لاختيار القالب
+        </Button>
+      </div>
+    );
+  }
+
+  if (!parsedTemplate) return null;
+
+  // ── Step 2: Customizer ──────────────────────────────────────────────────────
   return (
-    <div dir="rtl" className="container mx-auto px-4 py-10 max-w-6xl">
+    <div dir="rtl" className="container mx-auto px-4 py-8 md:py-10 max-w-6xl">
       {/* Header */}
-      <div className="mb-10 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-extrabold mb-2">تخصيص قالب السيرفر</h1>
-          <p className="text-muted-foreground">
-            عدّل زخرفة الرومات وألوان الرتب — التغييرات تُحفظ عندك فقط.
-          </p>
-        </div>
-        <div className="flex gap-2 shrink-0">
-          <Button variant="outline" size="sm" onClick={resetAll} className="gap-2">
-            <RotateCcw className="h-4 w-4" />
-            إعادة الضبط
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1.5 text-muted-foreground hover:text-foreground shrink-0 px-2"
+            onClick={() => { setSelectedTemplate(null); setParsedTemplate(null); setFetchState("idle"); }}
+          >
+            <ArrowRight className="h-4 w-4" />
+            <span className="hidden sm:inline">القوالب</span>
           </Button>
+          <div className="min-w-0">
+            <h1 className="text-lg md:text-2xl font-extrabold truncate">تخصيص: {selectedTemplate.name}</h1>
+            <p className="text-xs text-muted-foreground">التغييرات تُحفظ تلقائياً في متصفحك</p>
+          </div>
         </div>
+        <Button variant="outline" size="sm" onClick={resetAll} className="gap-2 shrink-0 self-start sm:self-auto">
+          <RotateCcw className="h-4 w-4" />
+          إعادة الضبط
+        </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* ── Left: Discord Preview ─────────────────────────── */}
+      {/* Customizer Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
+        {/* ── Discord Preview ─────────────────────── */}
         <div className="order-2 lg:order-1">
-          <div className="sticky top-20">
-            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+          <div className="lg:sticky lg:top-20">
+            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
               معاينة مباشرة
             </h2>
             <div className="rounded-xl overflow-hidden border border-border/60 bg-[#2b2d31] text-white shadow-2xl">
-              {/* Discord sidebar header */}
               <div className="bg-[#1e1f22] px-4 py-3 border-b border-white/10">
-                <span className="font-bold text-sm">🗂️ سيرفرك</span>
+                <span className="font-bold text-sm">🗂️ {selectedTemplate.name}</span>
               </div>
-              <div className="max-h-[60vh] overflow-y-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/10">
-                {DEFAULT_CATEGORIES.map((cat) => {
+              <div className="max-h-[50vh] overflow-y-auto">
+                {parsedTemplate.categories.map((cat) => {
                   const collapsed = collapsedCats[cat.id];
                   return (
                     <div key={cat.id} className="mt-1">
                       <button
-                        onClick={() => toggleCat(cat.id)}
+                        onClick={() => setCollapsedCats((p) => ({ ...p, [cat.id]: !p[cat.id] }))}
                         className="w-full flex items-center gap-1 px-2 py-1 text-xs font-semibold text-gray-400 uppercase tracking-wider hover:text-gray-200 transition-colors"
                       >
-                        {collapsed ? (
-                          <ChevronRight className="h-3 w-3" />
-                        ) : (
-                          <ChevronDown className="h-3 w-3" />
-                        )}
+                        {collapsed ? <ChevronRight className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
                         <span className="truncate">{cat.name}</span>
                       </button>
-                      {!collapsed &&
-                        cat.channels.map((ch) => {
-                          const emoji = getChannelEmoji(ch.id, ch.emoji);
-                          return (
-                            <div
-                              key={ch.id}
-                              className="flex items-center gap-2 px-3 py-1.5 mx-1 rounded hover:bg-white/5 cursor-default text-gray-400 hover:text-gray-200 transition-colors"
-                            >
-                              {ch.type === "voice" ? (
-                                <Volume2 className="h-3.5 w-3.5 shrink-0" />
-                              ) : (
-                                <Hash className="h-3.5 w-3.5 shrink-0" />
-                              )}
-                              <span className="text-sm truncate">
-                                {emoji} {ch.name}
-                              </span>
-                            </div>
-                          );
-                        })}
+                      {!collapsed && cat.channels.map((ch) => (
+                        <div key={ch.id} className="flex items-center gap-2 px-3 py-1.5 mx-1 rounded hover:bg-white/5 cursor-default text-gray-400 hover:text-gray-200 transition-colors">
+                          {ch.type === "voice"
+                            ? <Volume2 className="h-3.5 w-3.5 shrink-0" />
+                            : <Hash className="h-3.5 w-3.5 shrink-0" />}
+                          <span className="text-sm truncate">{getChannelEmoji(ch)} {ch.name}</span>
+                        </div>
+                      ))}
                     </div>
                   );
                 })}
@@ -230,134 +411,152 @@ export default function TemplateCustomizer() {
           </div>
         </div>
 
-        {/* ── Right: Edit Panel ─────────────────────────────── */}
+        {/* ── Edit Panel ───────────────────────────── */}
         <div className="order-1 lg:order-2">
           <Tabs defaultValue="channels">
-            <TabsList className="w-full mb-6">
-              <TabsTrigger value="channels" className="flex-1 gap-2">
+            <TabsList className="w-full mb-5">
+              <TabsTrigger value="channels" className="flex-1 gap-1.5 text-sm">
                 <LayoutList className="h-4 w-4" />
-                الرومات
+                القنوات
+                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 ml-1">{parsedTemplate.categories.reduce((s, c) => s + c.channels.length, 0)}</Badge>
               </TabsTrigger>
-              <TabsTrigger value="roles" className="flex-1 gap-2">
+              <TabsTrigger value="roles" className="flex-1 gap-1.5 text-sm">
                 <Palette className="h-4 w-4" />
                 الرتب
+                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 ml-1">{parsedTemplate.roles.length}</Badge>
               </TabsTrigger>
             </TabsList>
 
-            {/* ── Channels Tab ─────────────────────── */}
-            <TabsContent value="channels" className="space-y-4">
-              {DEFAULT_CATEGORIES.map((cat) => (
+            {/* Channels Tab */}
+            <TabsContent value="channels" className="space-y-3">
+              {parsedTemplate.categories.map((cat) => (
                 <CategoryEditor
                   key={cat.id}
                   category={cat}
                   customization={customization}
-                  onEditChannel={(ch) => {
-                    setEditChannel(ch);
-                    setEditCatId(cat.id);
-                  }}
+                  onEditChannel={(ch) => { setEditChannel(ch); setEditCatId(cat.id); }}
                   onApplyToCategory={(emoji) => {
                     const updates: Record<string, string> = {};
                     cat.channels.forEach((ch) => { updates[ch.id] = emoji; });
-                    setCustomization((prev) => ({
-                      ...prev,
-                      channelEmojis: { ...prev.channelEmojis, ...updates },
-                    }));
-                    toast({ title: "✅ تم", description: `تم تطبيق ${emoji} على كل رومات "${cat.name}".` });
+                    updateCustomization((prev) => ({ ...prev, channelEmojis: { ...prev.channelEmojis, ...updates } }));
+                    toast({ title: "✅ تم", description: `${emoji} على كل قنوات "${cat.name}"` });
                   }}
                 />
               ))}
-
-              {/* Apply to ALL */}
-              <div className="border border-dashed border-border/60 rounded-xl p-4">
-                <p className="text-sm font-medium mb-3 flex items-center gap-2">
-                  <FolderOpen className="h-4 w-4 text-primary" />
-                  تطبيق إيموجي على كل الرومات
-                </p>
-                <EmojiPickerInline
-                  onSelect={(emoji) => {
-                    const updates: Record<string, string> = {};
-                    DEFAULT_CATEGORIES.forEach((cat) =>
-                      cat.channels.forEach((ch) => { updates[ch.id] = emoji; })
-                    );
-                    setCustomization((prev) => ({
-                      ...prev,
-                      channelEmojis: { ...prev.channelEmojis, ...updates },
-                    }));
-                    toast({ title: "✅ تم", description: `تم تطبيق ${emoji} على جميع الرومات.` });
-                  }}
-                />
-              </div>
+              {parsedTemplate.categories.length > 1 && (
+                <div className="border border-dashed border-border/60 rounded-xl p-4">
+                  <p className="text-sm font-medium mb-3 flex items-center gap-2">
+                    <FolderOpen className="h-4 w-4 text-primary" />
+                    تطبيق إيموجي على كل القنوات
+                  </p>
+                  <EmojiPickerInline
+                    onSelect={(emoji) => {
+                      const updates: Record<string, string> = {};
+                      parsedTemplate.categories.forEach((cat) =>
+                        cat.channels.forEach((ch) => { updates[ch.id] = emoji; })
+                      );
+                      updateCustomization((prev) => ({ ...prev, channelEmojis: { ...prev.channelEmojis, ...updates } }));
+                      toast({ title: "✅ تم", description: `${emoji} على جميع القنوات.` });
+                    }}
+                  />
+                </div>
+              )}
             </TabsContent>
 
-            {/* ── Roles Tab ────────────────────────── */}
-            <TabsContent value="roles" className="space-y-3">
-              <p className="text-sm text-muted-foreground mb-4">
-                اضغط على مربع اللون بجانب اسم الرتبة لتغيير لونها.
-              </p>
-              {DEFAULT_ROLES.map((role) => (
-                <RoleColorEditor
-                  key={role.id}
-                  role={role}
-                  currentColor={getRoleColor(role.id, role.color)}
-                  onChange={(color) => {
-                    setCustomization((prev) => ({
-                      ...prev,
-                      roleColors: { ...prev.roleColors, [role.id]: color },
-                    }));
-                  }}
-                  onReset={() => {
-                    setCustomization((prev) => {
-                      const { [role.id]: _, ...rest } = prev.roleColors;
-                      return { ...prev, roleColors: rest };
-                    });
-                  }}
-                />
-              ))}
+            {/* Roles Tab */}
+            <TabsContent value="roles" className="space-y-2">
+              {parsedTemplate.roles.length === 0 ? (
+                <div className="text-center py-10 text-muted-foreground text-sm">
+                  لا توجد رتب مخصصة في هذا القالب.
+                </div>
+              ) : (
+                <>
+                  <p className="text-sm text-muted-foreground mb-3">اضغط على الدائرة الملوّنة لتغيير لون الرتبة.</p>
+                  {parsedTemplate.roles.map((role) => (
+                    <RoleColorEditor
+                      key={role.id}
+                      role={role}
+                      currentColor={getRoleColor(role)}
+                      onChange={(color) => updateCustomization((prev) => ({ ...prev, roleColors: { ...prev.roleColors, [role.id]: color } }))}
+                      onReset={() => updateCustomization((prev) => {
+                        const { [role.id]: _, ...rest } = prev.roleColors;
+                        return { ...prev, roleColors: rest };
+                      })}
+                    />
+                  ))}
+                </>
+              )}
             </TabsContent>
           </Tabs>
         </div>
       </div>
 
-      {/* ── Channel Edit Dialog ───────────────────────────── */}
+      {/* ── Apply with Bot ───────────────────────────────────────────── */}
+      <div className="mt-10 md:mt-14">
+        <div className="border border-[#5865F2]/30 rounded-2xl overflow-hidden">
+          <div className="bg-[#5865F2]/10 px-5 py-4 border-b border-[#5865F2]/20 flex items-center gap-3">
+            <Bot className="w-5 h-5 text-[#5865F2] shrink-0" />
+            <div>
+              <h2 className="font-bold text-base">طبّق القالب على سيرفرك بالبوت</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">بعد الانتهاء من التخصيص، استخدم بوتنا لتطبيق القالب</p>
+            </div>
+          </div>
+          <div className="p-5">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
+              {[
+                { icon: <Bot className="w-5 h-5 text-[#5865F2]" />, num: "١", title: "أضف البوت", desc: "اضغط الزر أدناه لإضافة البوت بصلاحية مدير السيرفر." },
+                { icon: <Zap className="w-5 h-5 text-yellow-500" />, num: "٢", title: "شغّل الأمر", desc: "اكتب في سيرفرك: /setup-template وأكّد." },
+                { icon: <LogOut className="w-5 h-5 text-green-500" />, num: "٣", title: "البوت يخرج تلقائياً", desc: "ينشئ القنوات والرتب ثم يغادر من تلقاء نفسه." },
+              ].map((step) => (
+                <div key={step.num} className="relative bg-muted/40 rounded-xl p-4 border border-border/40">
+                  <div className="absolute -top-2.5 -right-2.5 w-6 h-6 rounded-full bg-[#5865F2] text-white text-[11px] font-bold flex items-center justify-center">{step.num}</div>
+                  <div className="flex items-center gap-2 mb-1.5">{step.icon}<span className="font-semibold text-sm">{step.title}</span></div>
+                  <p className="text-xs text-muted-foreground leading-relaxed">{step.desc}</p>
+                </div>
+              ))}
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3 items-center">
+              <a href={BOT_INVITE} target="_blank" rel="noopener noreferrer" className="w-full sm:w-auto">
+                <Button size="lg" className="bg-[#5865F2] hover:bg-[#4752C4] text-white font-bold gap-2 w-full">
+                  <Bot className="w-5 h-5" />أضف البوت لسيرفرك<ExternalLink className="w-4 h-4" />
+                </Button>
+              </a>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <ShieldCheck className="w-4 h-4 text-green-500 shrink-0" />
+                <span>البوت يغادر تلقائياً بعد تطبيق القالب</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Channel Edit Dialog */}
       {editChannel && (
         <ChannelEditDialog
           channel={editChannel}
-          categoryName={
-            DEFAULT_CATEGORIES.find((c) => c.id === editCatId)?.name ?? ""
-          }
-          currentEmoji={getChannelEmoji(editChannel.id, editChannel.emoji)}
+          categoryName={parsedTemplate.categories.find((c) => c.id === editCatId)?.name ?? ""}
+          currentEmoji={getChannelEmoji(editChannel)}
           onClose={() => setEditChannel(null)}
           onApplyOne={(emoji) => {
-            setCustomization((prev) => ({
-              ...prev,
-              channelEmojis: { ...prev.channelEmojis, [editChannel.id]: emoji },
-            }));
+            updateCustomization((prev) => ({ ...prev, channelEmojis: { ...prev.channelEmojis, [editChannel.id]: emoji } }));
             setEditChannel(null);
-            toast({ title: "✅ تم تغيير الروم", description: `${emoji} ${editChannel.name}` });
+            toast({ title: "✅ تم", description: `${emoji} ${editChannel.name}` });
           }}
           onApplyCategory={(emoji) => {
-            const cat = DEFAULT_CATEGORIES.find((c) => c.id === editCatId);
+            const cat = parsedTemplate.categories.find((c) => c.id === editCatId);
             if (!cat) return;
             const updates: Record<string, string> = {};
             cat.channels.forEach((ch) => { updates[ch.id] = emoji; });
-            setCustomization((prev) => ({
-              ...prev,
-              channelEmojis: { ...prev.channelEmojis, ...updates },
-            }));
+            updateCustomization((prev) => ({ ...prev, channelEmojis: { ...prev.channelEmojis, ...updates } }));
             setEditChannel(null);
-            toast({ title: "✅ تم تغيير الكاتيقوري", description: `${emoji} على كل رومات "${cat.name}".` });
+            toast({ title: "✅ تم", description: `${emoji} على كل قنوات "${cat.name}".` });
           }}
           onApplyAll={(emoji) => {
             const updates: Record<string, string> = {};
-            DEFAULT_CATEGORIES.forEach((cat) =>
-              cat.channels.forEach((ch) => { updates[ch.id] = emoji; })
-            );
-            setCustomization((prev) => ({
-              ...prev,
-              channelEmojis: { ...prev.channelEmojis, ...updates },
-            }));
+            parsedTemplate.categories.forEach((cat) => cat.channels.forEach((ch) => { updates[ch.id] = emoji; }));
+            updateCustomization((prev) => ({ ...prev, channelEmojis: { ...prev.channelEmojis, ...updates } }));
             setEditChannel(null);
-            toast({ title: "✅ تم تغيير كل الرومات", description: `${emoji} على كل الرومات.` });
+            toast({ title: "✅ تم", description: `${emoji} على جميع القنوات.` });
           }}
         />
       )}
@@ -368,78 +567,50 @@ export default function TemplateCustomizer() {
 // ─── Category Editor ──────────────────────────────────────────────────────────
 
 function CategoryEditor({
-  category,
-  customization,
-  onEditChannel,
-  onApplyToCategory,
+  category, customization, onEditChannel, onApplyToCategory,
 }: {
-  category: Category;
+  category: ParsedCategory;
   customization: CustomizationState;
-  onEditChannel: (ch: Channel) => void;
+  onEditChannel: (ch: ParsedChannel) => void;
   onApplyToCategory: (emoji: string) => void;
 }) {
   const [open, setOpen] = useState(true);
-
   return (
     <div className="border border-border/60 rounded-xl overflow-hidden">
       <div
         className="flex items-center justify-between px-4 py-3 bg-muted/40 cursor-pointer hover:bg-muted/60 transition-colors"
         onClick={() => setOpen((p) => !p)}
       >
-        <div className="flex items-center gap-2">
-          {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-          <span className="font-semibold text-sm">{category.name}</span>
-          <Badge variant="secondary" className="text-xs">{category.channels.length} رومات</Badge>
+        <div className="flex items-center gap-2 min-w-0">
+          {open ? <ChevronDown className="h-4 w-4 shrink-0" /> : <ChevronRight className="h-4 w-4 shrink-0" />}
+          <span className="font-semibold text-sm truncate">{category.name}</span>
+          <Badge variant="secondary" className="text-[10px] py-0 px-1.5 shrink-0">{category.channels.length}</Badge>
         </div>
         <Popover>
           <PopoverTrigger asChild>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="text-xs gap-1 h-7 px-2"
-              onClick={(e) => e.stopPropagation()}
-            >
+            <Button size="sm" variant="ghost" className="text-xs gap-1 h-7 px-2 shrink-0" onClick={(e) => e.stopPropagation()}>
               <FolderOpen className="h-3.5 w-3.5" />
-              تغيير الكل
+              <span className="hidden sm:inline">تغيير الكل</span>
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-72 p-3" align="end">
-            <p className="text-xs font-medium mb-2 text-muted-foreground">
-              اختر إيموجي لتطبيقه على كل رومات هذه الكاتيقوري:
-            </p>
+            <p className="text-xs font-medium mb-2 text-muted-foreground">إيموجي لكل قنوات هذه الفئة:</p>
             <EmojiPickerInline onSelect={onApplyToCategory} />
           </PopoverContent>
         </Popover>
       </div>
-
       {open && (
         <div className="divide-y divide-border/40">
           {category.channels.map((ch) => {
             const emoji = customization.channelEmojis[ch.id] ?? ch.emoji;
             const changed = !!customization.channelEmojis[ch.id];
             return (
-              <div
-                key={ch.id}
-                className="flex items-center gap-3 px-4 py-2.5 hover:bg-muted/30 transition-colors"
-              >
-                {ch.type === "voice" ? (
-                  <Volume2 className="h-4 w-4 text-muted-foreground shrink-0" />
-                ) : (
-                  <Hash className="h-4 w-4 text-muted-foreground shrink-0" />
-                )}
-                <span className="text-lg w-7 text-center">{emoji}</span>
-                <span className="flex-1 text-sm">{ch.name}</span>
-                {changed && (
-                  <Badge variant="secondary" className="text-[10px] py-0 px-1.5 bg-primary/10 text-primary">
-                    معدّل
-                  </Badge>
-                )}
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
-                  onClick={() => onEditChannel(ch)}
-                >
+              <div key={ch.id} className="flex items-center gap-3 px-4 py-2.5 hover:bg-muted/30 transition-colors">
+                {ch.type === "voice" ? <Volume2 className="h-4 w-4 text-muted-foreground shrink-0" /> : <Hash className="h-4 w-4 text-muted-foreground shrink-0" />}
+                <span className="text-lg w-7 text-center shrink-0">{emoji}</span>
+                <span className="flex-1 text-sm truncate">{ch.name}</span>
+                {changed && <Badge variant="secondary" className="text-[10px] py-0 px-1.5 bg-primary/10 text-primary hidden sm:flex shrink-0">معدّل</Badge>}
+                <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground shrink-0" onClick={() => onEditChannel(ch)}>
                   <Pencil className="h-3.5 w-3.5" />
                 </Button>
               </div>
@@ -454,83 +625,41 @@ function CategoryEditor({
 // ─── Channel Edit Dialog ──────────────────────────────────────────────────────
 
 function ChannelEditDialog({
-  channel,
-  categoryName,
-  currentEmoji,
-  onClose,
-  onApplyOne,
-  onApplyCategory,
-  onApplyAll,
+  channel, categoryName, currentEmoji, onClose, onApplyOne, onApplyCategory, onApplyAll,
 }: {
-  channel: Channel;
-  categoryName: string;
-  currentEmoji: string;
-  onClose: () => void;
-  onApplyOne: (emoji: string) => void;
-  onApplyCategory: (emoji: string) => void;
-  onApplyAll: (emoji: string) => void;
+  channel: ParsedChannel; categoryName: string; currentEmoji: string;
+  onClose: () => void; onApplyOne: (e: string) => void; onApplyCategory: (e: string) => void; onApplyAll: (e: string) => void;
 }) {
   const [selected, setSelected] = useState(currentEmoji);
   const [custom, setCustom] = useState("");
-
   const finalEmoji = custom.trim() || selected;
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent dir="rtl" className="max-w-sm">
+      <DialogContent dir="rtl" className="max-w-sm mx-4 sm:mx-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Pencil className="h-4 w-4" />
-            تعديل زخرفة الروم
+          <DialogTitle className="flex items-center gap-2 text-base">
+            <Pencil className="h-4 w-4" />تعديل إيموجي القناة
           </DialogTitle>
         </DialogHeader>
-
         <div className="space-y-4">
-          {/* Preview */}
           <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/40 border border-border/50">
-            {channel.type === "voice" ? (
-              <Volume2 className="h-4 w-4 text-muted-foreground" />
-            ) : (
-              <Hash className="h-4 w-4 text-muted-foreground" />
-            )}
+            {channel.type === "voice" ? <Volume2 className="h-4 w-4 text-muted-foreground" /> : <Hash className="h-4 w-4 text-muted-foreground" />}
             <span className="text-xl">{finalEmoji}</span>
-            <span className="font-medium">{channel.name}</span>
+            <span className="font-medium text-sm">{channel.name}</span>
           </div>
-
-          {/* Custom input */}
           <div>
-            <label className="text-xs font-medium text-muted-foreground mb-1 block">
-              أو اكتب إيموجي يدوياً:
-            </label>
-            <Input
-              placeholder="مثال: 🌟"
-              value={custom}
-              onChange={(e) => setCustom(e.target.value)}
-              className="text-center text-lg"
-              maxLength={4}
-            />
+            <label className="text-xs font-medium text-muted-foreground mb-1 block">أو اكتب إيموجي يدوياً:</label>
+            <Input placeholder="مثال: 🌟" value={custom} onChange={(e) => setCustom(e.target.value)} className="text-center text-lg" maxLength={4} />
           </div>
-
-          {/* Quick pick */}
           <div>
             <p className="text-xs font-medium text-muted-foreground mb-2">اختر سريعاً:</p>
             <EmojiPickerInline onSelect={(e) => { setSelected(e); setCustom(""); }} selected={selected} />
           </div>
-
-          {/* Apply buttons */}
           <div className="space-y-2 pt-2 border-t border-border/40">
-            <Button className="w-full gap-2" onClick={() => onApplyOne(finalEmoji)}>
-              <Check className="h-4 w-4" />
-              تغيير هذا الروم فقط
-            </Button>
-            <Button variant="outline" className="w-full gap-2" onClick={() => onApplyCategory(finalEmoji)}>
-              <FolderOpen className="h-4 w-4" />
-              تغيير كل رومات "{categoryName}"
-            </Button>
-            <Button variant="outline" className="w-full gap-2 text-muted-foreground" onClick={() => onApplyAll(finalEmoji)}>
-              <LayoutList className="h-4 w-4" />
-              تغيير كل الرومات
-            </Button>
+            <Button className="w-full gap-2 text-sm" onClick={() => onApplyOne(finalEmoji)}><Check className="h-4 w-4" />تغيير هذه القناة فقط</Button>
+            <Button variant="outline" className="w-full gap-2 text-sm" onClick={() => onApplyCategory(finalEmoji)}><FolderOpen className="h-4 w-4" />تغيير كل قنوات "{categoryName}"</Button>
+            <Button variant="outline" className="w-full gap-2 text-sm text-muted-foreground" onClick={() => onApplyAll(finalEmoji)}><LayoutList className="h-4 w-4" />تغيير كل القنوات</Button>
           </div>
         </div>
       </DialogContent>
@@ -540,105 +669,56 @@ function ChannelEditDialog({
 
 // ─── Role Color Editor ────────────────────────────────────────────────────────
 
-const PRESET_COLORS = [
-  "#FFD700","#FF6B6B","#FF4757","#2ED573","#1E90FF","#A55EEA","#FFA502",
-  "#FF6348","#26de81","#45aaf2","#fd9644","#a55eea","#B2BEC3","#636E72",
-  "#00cec9","#fdcb6e","#e17055","#74b9ff","#55efc4","#fab1a0","#ffffff",
-];
-
 function RoleColorEditor({
-  role,
-  currentColor,
-  onChange,
-  onReset,
+  role, currentColor, onChange, onReset,
 }: {
-  role: Role;
-  currentColor: string;
-  onChange: (color: string) => void;
-  onReset: () => void;
+  role: ParsedRole; currentColor: string; onChange: (c: string) => void; onReset: () => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const changed = currentColor !== role.color;
-
   return (
     <div className="flex items-center gap-3 p-3 rounded-xl border border-border/60 hover:bg-muted/30 transition-colors">
-      {/* Color swatch / picker trigger */}
       <div
-        className="w-8 h-8 rounded-full shrink-0 cursor-pointer ring-2 ring-offset-2 ring-offset-background transition-all hover:scale-110"
-        style={{ backgroundColor: currentColor, ringColor: currentColor }}
+        className="w-8 h-8 rounded-full shrink-0 cursor-pointer ring-2 ring-offset-2 ring-offset-background hover:scale-110 transition-transform"
+        style={{ backgroundColor: currentColor }}
         onClick={() => inputRef.current?.click()}
         title="اضغط لتغيير اللون"
       />
-      <input
-        ref={inputRef}
-        type="color"
-        value={currentColor}
-        onChange={(e) => onChange(e.target.value)}
-        className="sr-only"
-      />
-
-      <span className="flex-1 font-medium text-sm">{role.name}</span>
-      <span className="text-xs text-muted-foreground font-mono">{currentColor.toUpperCase()}</span>
-
-      {/* Presets popover */}
+      <input ref={inputRef} type="color" value={currentColor} onChange={(e) => onChange(e.target.value)} className="sr-only" />
+      <span className="flex-1 font-medium text-sm truncate">{role.name}</span>
+      {changed && (
+        <Button size="sm" variant="ghost" className="h-7 px-2 text-xs text-muted-foreground hover:text-destructive shrink-0" onClick={onReset}>
+          <RotateCcw className="h-3.5 w-3.5" />
+        </Button>
+      )}
       <Popover>
         <PopoverTrigger asChild>
-          <Button size="sm" variant="ghost" className="h-7 w-7 p-0">
-            <Palette className="h-3.5 w-3.5" />
+          <Button size="sm" variant="outline" className="h-7 px-2 text-xs gap-1 shrink-0">
+            <Palette className="h-3 w-3" /><span className="hidden sm:inline">ألوان</span>
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-64 p-3" align="end">
-          <p className="text-xs font-medium text-muted-foreground mb-2">ألوان سريعة:</p>
+        <PopoverContent className="w-52 p-3" align="end">
+          <p className="text-xs text-muted-foreground mb-2">اختر لوناً جاهزاً:</p>
           <div className="grid grid-cols-7 gap-1.5">
             {PRESET_COLORS.map((c) => (
-              <button
-                key={c}
-                className="w-7 h-7 rounded-full hover:scale-110 transition-transform ring-offset-1 hover:ring-2 hover:ring-primary"
-                style={{ backgroundColor: c, border: c === "#ffffff" ? "1px solid #ccc" : undefined }}
-                onClick={() => onChange(c)}
-                title={c}
-              />
+              <button key={c} className={`w-6 h-6 rounded-full hover:scale-110 transition-transform ${currentColor === c ? "ring-2 ring-offset-1 ring-primary" : ""}`} style={{ backgroundColor: c }} onClick={() => onChange(c)} />
             ))}
           </div>
         </PopoverContent>
       </Popover>
-
-      {changed && (
-        <Button
-          size="sm"
-          variant="ghost"
-          className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
-          onClick={onReset}
-          title="إعادة اللون الافتراضي"
-        >
-          <RotateCcw className="h-3.5 w-3.5" />
-        </Button>
-      )}
     </div>
   );
 }
 
-// ─── Emoji Picker Inline ──────────────────────────────────────────────────────
+// ─── Emoji Picker ─────────────────────────────────────────────────────────────
 
-function EmojiPickerInline({
-  onSelect,
-  selected,
-}: {
-  onSelect: (emoji: string) => void;
-  selected?: string;
-}) {
+function EmojiPickerInline({ onSelect, selected }: { onSelect: (e: string) => void; selected?: string }) {
   return (
-    <div className="grid grid-cols-8 gap-1">
-      {POPULAR_EMOJIS.map((emoji) => (
-        <button
-          key={emoji}
-          onClick={() => onSelect(emoji)}
-          className={`w-8 h-8 text-lg rounded hover:bg-primary/20 transition-colors flex items-center justify-center ${
-            selected === emoji ? "bg-primary/30 ring-1 ring-primary" : ""
-          }`}
-          title={emoji}
-        >
-          {emoji}
+    <div className="flex flex-wrap gap-1.5">
+      {POPULAR_EMOJIS.map((e) => (
+        <button key={e} onClick={() => onSelect(e)}
+          className={`text-lg w-8 h-8 flex items-center justify-center rounded-md hover:bg-muted transition-colors ${selected === e ? "bg-primary/20 ring-1 ring-primary" : ""}`}>
+          {e}
         </button>
       ))}
     </div>

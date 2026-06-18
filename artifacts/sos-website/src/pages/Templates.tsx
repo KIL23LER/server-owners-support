@@ -1,24 +1,22 @@
 import { useState } from "react";
-import { useListTemplates, useGetMyGuilds, Template } from "@workspace/api-client-react";
-import { useAuth } from "@/lib/auth";
+import { useListTemplates, Template } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
-import { Search, Server, Filter, LayoutTemplate } from "lucide-react";
+import { Search, Filter, LayoutTemplate, Bot, Zap, LogOut, ArrowLeft, ExternalLink, Pencil } from "lucide-react";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
-import { useTranslation } from "react-i18next";
+
+const APP_ID = "1510614634111963156";
+const BOT_INVITE = `https://discord.com/oauth2/authorize?client_id=${APP_ID}&permissions=8&scope=bot%20applications.commands`;
 
 export default function Templates() {
-  const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
@@ -27,10 +25,10 @@ export default function Templates() {
   });
 
   const categories = templates
-    ? Array.from(new Set(templates.map(t => t.category)))
+    ? Array.from(new Set(templates.map((t) => t.category)))
     : [];
 
-  const filteredTemplates = templates?.filter(template => {
+  const filteredTemplates = templates?.filter((template) => {
     const matchesSearch =
       template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       template.description.toLowerCase().includes(searchTerm.toLowerCase());
@@ -39,34 +37,39 @@ export default function Templates() {
   });
 
   return (
-    <div className="container mx-auto px-4 py-12">
-      <div className="mb-12 text-center max-w-2xl mx-auto">
-        <h1 className="text-4xl font-extrabold mb-4 text-foreground">{t("templates.title")}</h1>
-        <p className="text-lg text-muted-foreground">{t("templates.subtitle")}</p>
+    <div className="container mx-auto px-4 py-8 md:py-12" dir="rtl">
+      {/* Header */}
+      <div className="mb-8 md:mb-12 text-center max-w-2xl mx-auto">
+        <h1 className="text-3xl md:text-4xl font-extrabold mb-3 text-foreground">معرض القوالب</h1>
+        <p className="text-base md:text-lg text-muted-foreground">
+          اختر القالب المناسب لسيرفرك وطبّقه مباشرةً عبر بوتنا بأمر واحد.
+        </p>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-4 mb-8">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute start-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
+      {/* Search + Filters */}
+      <div className="flex flex-col sm:flex-row gap-3 mb-6">
+        <div className="relative flex-1">
+          <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
-            placeholder={t("templates.searchPlaceholder")}
-            className="ps-10"
+            placeholder="ابحث عن قالب..."
+            className="pr-10"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
           <Button
+            size="sm"
             variant={selectedCategory === null ? "default" : "outline"}
             onClick={() => setSelectedCategory(null)}
             className="shrink-0"
           >
-            {t("templates.all")}
+            الكل
           </Button>
-          {categories.map(category => (
+          {categories.map((category) => (
             <Button
               key={category}
+              size="sm"
               variant={selectedCategory === category ? "default" : "outline"}
               onClick={() => setSelectedCategory(category)}
               className="shrink-0"
@@ -77,25 +80,26 @@ export default function Templates() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      {/* Templates Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
         {isLoading ? (
           Array.from({ length: 8 }).map((_, i) => (
             <div key={i} className="flex flex-col space-y-3">
-              <Skeleton className="h-40 w-full rounded-xl" />
-              <Skeleton className="h-6 w-3/4" />
+              <Skeleton className="h-36 w-full rounded-xl" />
+              <Skeleton className="h-5 w-3/4" />
               <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-2/3" />
+              <Skeleton className="h-9 w-full rounded-md" />
             </div>
           ))
         ) : filteredTemplates && filteredTemplates.length > 0 ? (
-          filteredTemplates.map(template => (
+          filteredTemplates.map((template) => (
             <TemplateCard key={template.id} template={template} />
           ))
         ) : (
-          <div className="col-span-full py-20 text-center flex flex-col items-center justify-center">
-            <Filter className="h-12 w-12 text-muted-foreground/50 mb-4" />
-            <h3 className="text-xl font-bold mb-2">{t("templates.noResults")}</h3>
-            <p className="text-muted-foreground">{t("templates.noResultsDesc")}</p>
+          <div className="col-span-full py-16 text-center flex flex-col items-center">
+            <Filter className="h-10 w-10 text-muted-foreground/40 mb-3" />
+            <h3 className="text-lg font-bold mb-1">لا توجد نتائج</h3>
+            <p className="text-muted-foreground text-sm">لم نجد قوالب تطابق بحثك.</p>
           </div>
         )}
       </div>
@@ -104,18 +108,12 @@ export default function Templates() {
 }
 
 function TemplateCard({ template }: { template: Template }) {
-  const { t } = useTranslation();
-  const { user, login } = useAuth();
-  const [isApplyDialogOpen, setIsApplyDialogOpen] = useState(false);
-
-  const templateUrl = template.templateCode.startsWith("http")
-    ? template.templateCode
-    : `https://discord.new/${template.templateCode}`;
+  const [open, setOpen] = useState(false);
 
   return (
-    <Card className="overflow-hidden border-border/60 hover-elevate transition-all duration-300 flex flex-col h-full">
+    <Card className="overflow-hidden border-border/60 hover:border-primary/40 hover:shadow-lg transition-all duration-300 flex flex-col h-full">
       {template.imageUrl ? (
-        <div className="h-40 w-full overflow-hidden bg-muted">
+        <div className="h-36 w-full overflow-hidden bg-muted">
           <img
             src={template.imageUrl}
             alt={template.name}
@@ -123,148 +121,143 @@ function TemplateCard({ template }: { template: Template }) {
           />
         </div>
       ) : (
-        <div className="h-40 w-full bg-primary/5 flex items-center justify-center border-b border-border/40">
-          <LayoutTemplate className="h-16 w-16 text-primary/20" />
+        <div className="h-36 w-full bg-primary/5 flex items-center justify-center border-b border-border/40">
+          <LayoutTemplate className="h-14 w-14 text-primary/20" />
         </div>
       )}
-      <CardContent className="p-5 flex flex-col flex-1">
-        <div className="flex justify-between items-start mb-3">
-          <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20">
+
+      <CardContent className="p-4 flex flex-col flex-1">
+        <div className="flex justify-between items-start mb-2">
+          <Badge variant="secondary" className="bg-primary/10 text-primary text-xs">
             {template.category}
           </Badge>
           {template.featured && (
-            <Badge className="bg-amber-500 hover:bg-amber-600">{t("templates.featured")}</Badge>
+            <Badge className="bg-amber-500 hover:bg-amber-600 text-xs">مميز</Badge>
           )}
         </div>
-        <h3 className="text-lg font-bold mb-2 line-clamp-1">{template.name}</h3>
-        <p className="text-sm text-muted-foreground line-clamp-2 mb-4 flex-1">
+        <h3 className="text-base font-bold mb-1 line-clamp-1">{template.name}</h3>
+        <p className="text-xs text-muted-foreground line-clamp-2 mb-3 flex-1">
           {template.description}
         </p>
 
-        <div className="mt-auto pt-4 border-t border-border/40">
-          {!user ? (
-            <Button className="w-full" onClick={login}>
-              {t("templates.loginToApply")}
+        <div className="mt-auto pt-3 border-t border-border/40 flex gap-2">
+          <Button className="flex-1 text-sm" onClick={() => setOpen(true)}>
+            <Bot className="w-4 h-4 ml-1.5" />
+            تطبيق
+          </Button>
+          <a href={`/customize?id=${template.id}`} className="flex-1">
+            <Button variant="outline" className="w-full text-sm gap-1.5">
+              <Pencil className="w-3.5 h-3.5" />
+              تخصيص
             </Button>
-          ) : (
-            <Dialog open={isApplyDialogOpen} onOpenChange={setIsApplyDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="w-full">{t("templates.applyToServer")}</Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-md">
-                <DialogHeader>
-                  <DialogTitle>{t("templates.applyDialog.title", { name: template.name })}</DialogTitle>
-                  <DialogDescription>
-                    {t("templates.applyDialog.description")}
-                  </DialogDescription>
-                </DialogHeader>
-                <ApplyTemplateForm template={template} templateUrl={templateUrl} />
-              </DialogContent>
-            </Dialog>
-          )}
+          </a>
         </div>
       </CardContent>
+
+      <ApplyBotDialog open={open} onClose={() => setOpen(false)} templateName={template.name} />
     </Card>
   );
 }
 
-function ApplyTemplateForm({ template, templateUrl }: { template: Template; templateUrl: string }) {
-  const { t } = useTranslation();
-  const { data: guilds, isLoading } = useGetMyGuilds({
-    query: { queryKey: ["my-guilds"] }
-  });
-  const [selectedGuild, setSelectedGuild] = useState<{ id: string; name: string; icon: string | null } | null>(null);
-
-  if (isLoading) {
-    return (
-      <div className="space-y-3 py-4">
-        <Skeleton className="h-16 w-full rounded-lg" />
-        <Skeleton className="h-16 w-full rounded-lg" />
-        <Skeleton className="h-16 w-full rounded-lg" />
-      </div>
-    );
-  }
-
-  if (!guilds || guilds.length === 0) {
-    return (
-      <div className="py-8 text-center space-y-4">
-        <Server className="h-12 w-12 text-muted-foreground mx-auto" />
-        <p className="text-muted-foreground">{t("templates.applyDialog.noGuilds")}</p>
-        <a href={templateUrl} target="_blank" rel="noopener noreferrer">
-          <Button className="w-full">{t("templates.applyDialog.openInDiscord")}</Button>
-        </a>
-      </div>
-    );
-  }
-
-  if (selectedGuild) {
-    return (
-      <div className="space-y-4 py-2">
-        <div className="flex items-center gap-3 p-3 rounded-lg border border-primary bg-primary/5">
-          {selectedGuild.icon ? (
-            <img
-              src={`https://cdn.discordapp.com/icons/${selectedGuild.id}/${selectedGuild.icon}.png`}
-              alt={selectedGuild.name}
-              className="w-10 h-10 rounded-full flex-shrink-0"
-            />
-          ) : (
-            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary flex-shrink-0">
-              {selectedGuild.name.charAt(0)}
-            </div>
-          )}
-          <span className="flex-1 font-medium text-sm">{selectedGuild.name}</span>
-          <Button size="sm" variant="ghost" className="text-muted-foreground" onClick={() => setSelectedGuild(null)}>
-            {t("templates.applyDialog.change")}
-          </Button>
-        </div>
-
-        <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 space-y-1.5 text-sm">
-          <p className="font-semibold text-amber-600 dark:text-amber-400">{t("templates.applyDialog.steps")}</p>
-          <ol className="space-y-1 text-muted-foreground ps-4 list-decimal">
-            <li>{t("templates.applyDialog.step1")}</li>
-            <li>{t("templates.applyDialog.step2")}</li>
-            <li>{t("templates.applyDialog.step3", { guild: selectedGuild.name })}</li>
-          </ol>
-        </div>
-
-        <a href={templateUrl} target="_blank" rel="noopener noreferrer">
-          <Button className="w-full gap-2">
-            <Server className="h-4 w-4" />
-            {t("templates.applyDialog.applyOn", { guild: selectedGuild.name })}
+function ApplyBotDialog({
+  open,
+  onClose,
+  templateName,
+}: {
+  open: boolean;
+  onClose: () => void;
+  templateName: string;
+}) {
+  const steps = [
+    {
+      icon: <Bot className="w-5 h-5 text-[#5865F2]" />,
+      num: "١",
+      title: "أضف البوت لسيرفرك",
+      desc: "اضغط الزر أدناه وأضف البوت بصلاحية مدير السيرفر.",
+      action: (
+        <a href={BOT_INVITE} target="_blank" rel="noopener noreferrer">
+          <Button size="sm" className="bg-[#5865F2] hover:bg-[#4752C4] text-white gap-1.5 w-full mt-2">
+            <ExternalLink className="w-3.5 h-3.5" />
+            أضف البوت
           </Button>
         </a>
-      </div>
-    );
-  }
+      ),
+    },
+    {
+      icon: <Zap className="w-5 h-5 text-yellow-500" />,
+      num: "٢",
+      title: 'اكتب الأمر في سيرفرك',
+      desc: (
+        <>
+          اكتب في أي قناة:
+          <code className="block mt-1.5 bg-muted px-3 py-1.5 rounded-md text-sm font-mono text-foreground text-left ltr" dir="ltr">
+            /setup-template
+          </code>
+        </>
+      ),
+    },
+    {
+      icon: <LogOut className="w-5 h-5 text-green-500" />,
+      num: "٣",
+      title: "البوت ينشئ القالب ثم يخرج",
+      desc: `سيُنشئ البوت قنوات ورتب قالب "${templateName}" تلقائياً، ثم يغادر السيرفر من تلقاء نفسه.`,
+    },
+  ];
 
   return (
-    <div className="space-y-2 py-2">
-      <p className="text-xs text-muted-foreground mb-3">{t("templates.applyDialog.selectServer")}</p>
-      <div className="max-h-[50vh] overflow-y-auto space-y-2 pe-1">
-        {guilds.map((guild) => (
-          <button
-            key={guild.id}
-            onClick={() => setSelectedGuild(guild)}
-            className="w-full flex items-center gap-3 p-3 rounded-lg border border-border hover:border-primary hover:bg-primary/5 transition-all group text-start"
-          >
-            {guild.icon ? (
-              <img
-                src={`https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.png`}
-                alt={guild.name}
-                className="w-10 h-10 rounded-full flex-shrink-0"
-              />
-            ) : (
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary flex-shrink-0">
-                {guild.name.charAt(0)}
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent dir="rtl" className="max-w-sm mx-4 sm:mx-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-base">
+            <Bot className="w-5 h-5 text-[#5865F2]" />
+            تطبيق قالب: {templateName}
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4 mt-2">
+          {steps.map((step, i) => (
+            <div key={i} className="flex gap-3">
+              <div className="flex flex-col items-center">
+                <div className="w-7 h-7 rounded-full bg-[#5865F2]/10 border border-[#5865F2]/30 flex items-center justify-center text-xs font-bold text-[#5865F2] shrink-0">
+                  {step.num}
+                </div>
+                {i < steps.length - 1 && (
+                  <div className="w-px flex-1 bg-border/60 my-1" />
+                )}
               </div>
-            )}
-            <span className="flex-1 font-medium text-sm group-hover:text-primary transition-colors line-clamp-1">
-              {guild.name}
-            </span>
-            <Server className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
-          </button>
-        ))}
-      </div>
-    </div>
+              <div className="flex-1 pb-1">
+                <div className="flex items-center gap-1.5 mb-0.5">
+                  {step.icon}
+                  <p className="font-semibold text-sm">{step.title}</p>
+                </div>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  {typeof step.desc === "string" ? step.desc : step.desc}
+                </p>
+                {step.action}
+              </div>
+            </div>
+          ))}
+
+          <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3 flex gap-2">
+            <span className="text-green-500 mt-0.5">🛡️</span>
+            <p className="text-xs text-muted-foreground">
+              البوت لا يراقب سيرفرك — يدخل فقط لتطبيق القالب ثم يخرج تلقائياً.
+            </p>
+          </div>
+
+          <div className="flex gap-2 pt-1">
+            <a href="/customize" className="flex-1">
+              <Button variant="outline" size="sm" className="w-full gap-1.5 text-xs">
+                <ArrowLeft className="w-3.5 h-3.5" />
+                تخصيص الإيموجيات والألوان
+              </Button>
+            </a>
+            <Button variant="ghost" size="sm" onClick={onClose} className="px-3 text-xs">
+              إغلاق
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }

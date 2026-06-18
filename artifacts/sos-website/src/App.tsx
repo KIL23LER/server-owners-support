@@ -1,4 +1,4 @@
-import { Switch, Route, Router as WouterRouter } from "wouter";
+import { Switch, Route, Redirect, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -8,9 +8,7 @@ import Home from "@/pages/Home";
 import Templates from "@/pages/Templates";
 import Admin from "@/pages/Admin";
 import TemplateCustomizer from "@/pages/TemplateCustomizer";
-import BotPage from "@/pages/BotPage";
 import NotFound from "@/pages/not-found";
-import "@/lib/i18n";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -28,7 +26,9 @@ function Router() {
         <Route path="/" component={Home} />
         <Route path="/templates" component={Templates} />
         <Route path="/customize" component={TemplateCustomizer} />
-        <Route path="/bot" component={BotPage} />
+        <Route path="/bot">
+          <Redirect to="/customize" />
+        </Route>
         <Route path="/admin" component={Admin} />
         <Route component={NotFound} />
       </Switch>
