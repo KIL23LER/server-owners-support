@@ -1,6 +1,13 @@
+import { drizzle } from "drizzle-orm/node-postgres";
+import pkg from "pg";
 import { pgTable, text, serial, boolean, timestamp } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
-import { z } from "zod/v4";
+
+const { Pool } = pkg;
+
+const pool = new Pool({
+  connectionString: process.env.NEON_DATABASE_URL || process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
+});
 
 export const usersTable = pgTable("users", {
   discordId: text("discord_id").primaryKey(),
@@ -49,20 +56,6 @@ export const settingsTable = pgTable("settings", {
   updatedBy: text("updated_by").notNull(),
 });
 
-export const insertUserSchema = createInsertSchema(usersTable);
-export const insertSessionSchema = createInsertSchema(sessionsTable);
-export const insertAdminSchema = createInsertSchema(adminsTable);
-export const insertTemplateSchema = createInsertSchema(templatesTable).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertSettingSchema = createInsertSchema(settingsTable);
-
-export type InsertUser = z.infer<typeof insertUserSchema>;
-export type InsertSession = z.infer<typeof insertSessionSchema>;
-export type InsertAdmin = z.infer<typeof insertAdminSchema>;
-export type InsertTemplate = z.infer<typeof insertTemplateSchema>;
-export type InsertSetting = z.infer<typeof insertSettingSchema>;
-
-export type User = typeof usersTable.$inferSelect;
-export type Session = typeof sessionsTable.$inferSelect;
-export type Admin = typeof adminsTable.$inferSelect;
-export type Template = typeof templatesTable.$inferSelect;
-export type Setting = typeof settingsTable.$inferSelect;
+export const db = drizzle(pool, {
+  schema: { usersTable, sessionsTable, adminsTable, templatesTable, settingsTable },
+});
