@@ -25,14 +25,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!name || !description || !templateCode || !category)
       return res.status(400).json({ error: "الحقول المطلوبة ناقصة" });
 
-    const [template] = await db.insert(templatesTable).values({
+    const insertVals = {
       name, description,
       imageUrl: imageUrl || null,
       templateCode: templateCode.replace("https://discord.new/", "").trim(),
       category,
       featured: featured ?? false,
       createdBy: user.discordId,
-    }).returning();
+    } as any;
+
+    const [template] = await db.insert(templatesTable).values(insertVals).returning();
 
     return res.status(201).json({ ...template, createdAt: template.createdAt.toISOString() });
   }
