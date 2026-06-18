@@ -40,6 +40,9 @@ await esbuild({
   format: "esm",
   outfile: path.join(funcDir, "index.mjs"),
   logLevel: "error",
+  define: {
+    "process.env.NODE_ENV": '"production"',
+  },
   external: [
     "*.node",
     "pg-native",
@@ -77,6 +80,7 @@ await esbuild({
     "puppeteer-core",
     "playwright",
     "pino-pretty",
+    "thread-stream",
   ],
   tsconfig: path.join(root, "artifacts/api-server/tsconfig.json"),
   banner: {
