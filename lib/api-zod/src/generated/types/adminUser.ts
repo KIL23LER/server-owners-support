@@ -6,6 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface HealthStatus {
-  status: string;
+export interface AdminUser {
+  id: number;
+  discordId: string;
+  addedBy: string;
+  isOwner: boolean;
+  createdAt: string;
 }
