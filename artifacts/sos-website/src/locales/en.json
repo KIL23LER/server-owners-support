@@ -1,5 +1,9 @@
 {
   "dir": "ltr",
+  "site": {
+    "name": "Server Owners Support",
+    "shortName": "SOS"
+  },
   "nav": {
     "home": "Home",
     "templates": "Templates",
