@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { templatesTable } from "@workspace/db";
+import { templatesTable, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { requireAuth } from "../middlewares/auth.js";
 
@@ -37,19 +37,23 @@ router.post("/bot/apply", requireAuth, async (req, res) => {
     return;
   }
 
-  const { guildId, templateId, accessToken } = req.body;
+  const { guildId, templateId } = req.body;
 
   if (!guildId || !templateId) {
     res.status(400).json({ error: "guildId و templateId مطلوبان" });
     return;
   }
 
-  if (!accessToken || typeof accessToken !== "string") {
-    res.status(400).json({ error: "Discord access token مطلوب للتحقق من صلاحيات السيرفر" });
+  const userRow = await db.query.usersTable.findFirst({
+    where: eq(usersTable.discordId, req.user!.discordId),
+  });
+
+  if (!userRow?.accessToken) {
+    res.status(401).json({ error: "تعذّر الحصول على صلاحيات Discord، أعد تسجيل الدخول" });
     return;
   }
 
-  const adminGuilds = await getUserGuilds(accessToken);
+  const adminGuilds = await getUserGuilds(userRow.accessToken);
   if (!adminGuilds.includes(String(guildId))) {
     res.status(403).json({ error: "ليس لديك صلاحية ADMINISTRATOR في هذا السيرفر" });
     return;
