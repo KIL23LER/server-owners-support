@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/lib/auth";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -13,16 +14,19 @@ import {
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { LogOut, LayoutTemplate, ShieldCheck, Menu, Home, Sliders } from "lucide-react";
 
-const navLinks = [
-  { href: "/", label: "الرئيسية", icon: <Home className="w-4 h-4" /> },
-  { href: "/templates", label: "القوالب", icon: <LayoutTemplate className="w-4 h-4" /> },
-  { href: "/customize", label: "تخصيص القالب", icon: <Sliders className="w-4 h-4" /> },
-];
-
 export function Navbar() {
   const [location] = useLocation();
   const { user, login, logout, isLoading } = useAuth();
+  const { t } = useTranslation();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  const dir = t("dir") as "rtl" | "ltr";
+
+  const navLinks = [
+    { href: "/", label: t("nav.home"), icon: <Home className="w-4 h-4" /> },
+    { href: "/templates", label: t("nav.templates"), icon: <LayoutTemplate className="w-4 h-4" /> },
+    { href: "/customize", label: t("nav.customize"), icon: <Sliders className="w-4 h-4" /> },
+  ];
 
   const isActive = (href: string) =>
     href === "/" ? location === "/" : location.startsWith(href);
@@ -39,7 +43,7 @@ export function Navbar() {
                 <Menu className="w-5 h-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-64 pt-8" dir="rtl">
+            <SheetContent side={dir === "rtl" ? "right" : "left"} className="w-64 pt-8" dir={dir}>
               <div className="flex flex-col gap-1 mt-4">
                 {navLinks.map((link) => (
                   <Link
@@ -60,7 +64,7 @@ export function Navbar() {
               <div className="mt-6 px-4">
                 {!isLoading && !user && (
                   <Button onClick={() => { login(); setMobileOpen(false); }} className="w-full font-bold">
-                    تسجيل الدخول
+                    {t("nav.login")}
                   </Button>
                 )}
               </div>
@@ -109,7 +113,7 @@ export function Navbar() {
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56" dir="rtl">
+                <DropdownMenuContent align="end" className="w-56" dir={dir}>
                   <div className="flex items-center gap-2 p-2">
                     <div className="flex flex-col space-y-1 leading-none">
                       {user.globalName && <p className="font-medium">{user.globalName}</p>}
@@ -120,28 +124,28 @@ export function Navbar() {
                   <DropdownMenuItem asChild>
                     <Link href="/templates" className="cursor-pointer flex w-full items-center gap-2">
                       <LayoutTemplate className="h-4 w-4" />
-                      <span>تصفح القوالب</span>
+                      <span>{t("nav.browseTemplates")}</span>
                     </Link>
                   </DropdownMenuItem>
                   {user.isAdmin && (
                     <DropdownMenuItem asChild>
                       <Link href="/admin" className="cursor-pointer flex w-full items-center gap-2">
                         <ShieldCheck className="h-4 w-4 text-primary" />
-                        <span className="text-primary font-medium">لوحة الإدارة</span>
+                        <span className="text-primary font-medium">{t("nav.adminPanel")}</span>
                       </Link>
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem className="cursor-pointer text-destructive focus:text-destructive gap-2" onClick={logout}>
                     <LogOut className="h-4 w-4" />
-                    <span>تسجيل الخروج</span>
+                    <span>{t("nav.logout")}</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
               <Button onClick={login} className="font-bold text-sm px-4">
-                <span className="hidden sm:inline">تسجيل الدخول باستخدام ديسكورد</span>
-                <span className="sm:hidden">دخول</span>
+                <span className="hidden sm:inline">{t("nav.login")}</span>
+                <span className="sm:hidden">{t("nav.loginShort")}</span>
               </Button>
             )
           )}
