@@ -8,7 +8,8 @@
     "browseTemplates": "Browse Templates",
     "adminPanel": "Admin Panel",
     "logout": "Logout",
-    "login": "Login with Discord"
+    "login": "Login with Discord",
+    "loginShort": "Login"
   },
   "home": {
     "badge": "550+ Discord Server Owners",
