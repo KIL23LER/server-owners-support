@@ -26,12 +26,7 @@ app.use(
   }),
 );
 app.use(cors({
-  origin: [
-    "https://server-owners-support.vercel.app",
-    /\.vercel\.app$/,
-    "http://localhost:3000",
-    /localhost:\d+/,
-  ],
+  origin: true,
   credentials: true,
 }));
 app.use(express.json());

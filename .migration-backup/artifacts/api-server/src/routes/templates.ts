@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db, templatesTable } from "@workspace/db";
 import { eq, desc } from "drizzle-orm";
-import { extractToken, getSessionUser } from "../lib/auth";
+import { requireAdmin, optionalAuth } from "../middlewares/auth.js";
 
 const router = Router();
 
@@ -21,12 +21,8 @@ router.get("/templates/:id", async (req, res) => {
   return res.json({ ...template, createdAt: template.createdAt.toISOString() });
 });
 
-router.post("/templates", async (req, res) => {
-  const token = extractToken(req);
-  if (!token) return res.status(401).json({ error: "غير مصرح" });
-  const user = await getSessionUser(token);
-  if (!user?.isAdmin) return res.status(403).json({ error: "يجب أن تكون أدمن" });
-
+router.post("/templates", requireAdmin, async (req, res) => {
+  const user = req.user!;
   const { name, description, imageUrl, templateCode, category, featured } = req.body;
   if (!name || !description || !templateCode || !category)
     return res.status(400).json({ error: "الحقول المطلوبة ناقصة" });
@@ -44,14 +40,9 @@ router.post("/templates", async (req, res) => {
   return res.status(201).json({ ...template, createdAt: template.createdAt.toISOString() });
 });
 
-router.put("/templates/:id", async (req, res) => {
+router.put("/templates/:id", requireAdmin, async (req, res) => {
   const id = parseInt(req.params.id);
   if (isNaN(id)) return res.status(400).json({ error: "معرف غير صالح" });
-
-  const token = extractToken(req);
-  if (!token) return res.status(401).json({ error: "غير مصرح" });
-  const user = await getSessionUser(token);
-  if (!user?.isAdmin) return res.status(403).json({ error: "يجب أن تكون أدمن" });
 
   const { name, description, imageUrl, templateCode, category, featured } = req.body;
   const [updated] = await db.update(templatesTable).set({
@@ -68,15 +59,9 @@ router.put("/templates/:id", async (req, res) => {
   return res.json({ ...updated, createdAt: updated.createdAt.toISOString() });
 });
 
-router.delete("/templates/:id", async (req, res) => {
+router.delete("/templates/:id", requireAdmin, async (req, res) => {
   const id = parseInt(req.params.id);
   if (isNaN(id)) return res.status(400).json({ error: "معرف غير صالح" });
-
-  const token = extractToken(req);
-  if (!token) return res.status(401).json({ error: "غير مصرح" });
-  const user = await getSessionUser(token);
-  if (!user?.isAdmin) return res.status(403).json({ error: "يجب أن تكون أدمن" });
-
   await db.delete(templatesTable).where(eq(templatesTable.id, id));
   return res.json({ success: true });
 });
