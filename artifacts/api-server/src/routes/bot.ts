@@ -25,7 +25,7 @@ async function getUserGuilds(accessToken: string): Promise<string[]> {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
   if (!res.ok) return [];
-  const guilds: Array<{ id: string; permissions: string }> = await res.json();
+  const guilds = (await res.json()) as Array<{ id: string; permissions: string }>;
   return guilds
     .filter((g) => (BigInt(g.permissions) & 0x8n) === 0x8n)
     .map((g) => g.id);
@@ -82,7 +82,7 @@ router.post("/bot/apply", requireAuth, async (req, res) => {
     return;
   }
 
-  const tplData = await tplRes.json();
+  const tplData = await tplRes.json() as any;
   const source = tplData.serialized_source_guild;
 
   if (!source) {
@@ -105,7 +105,7 @@ router.post("/bot/apply", requireAuth, async (req, res) => {
       }),
     });
     if (r.ok) {
-      const newRole = await r.json();
+      const newRole = await r.json() as any;
       roleIdMap[role.id] = newRole.id;
     }
     await new Promise((resolve) => setTimeout(resolve, 300));
@@ -120,7 +120,7 @@ router.post("/bot/apply", requireAuth, async (req, res) => {
       body: JSON.stringify({ name: ch.name, type: 4, position: ch.position ?? 0 }),
     });
     if (r.ok) {
-      const newCh = await r.json();
+      const newCh = await r.json() as any;
       categoryIdMap[ch.id] = newCh.id;
     }
     await new Promise((resolve) => setTimeout(resolve, 300));
