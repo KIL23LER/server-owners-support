@@ -7,6 +7,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: () => void;
   logout: () => void;
+  loginError: string | null;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -14,6 +15,7 @@ const AuthContext = createContext<AuthContextType>({
   isLoading: true,
   login: () => {},
   logout: () => {},
+  loginError: null,
 });
 
 function getStoredToken(): string | null {
@@ -44,6 +46,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (stored) setAuthTokenGetter(() => stored);
     return stored;
   });
+  const [loginError, setLoginError] = useState<string | null>(null);
 
   const queryClient = useQueryClient();
 
@@ -54,6 +57,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (sessionToken) {
       saveToken(sessionToken);
       setToken(sessionToken);
+      setLoginError(null);
       window.history.replaceState({}, "", window.location.pathname);
       window.location.replace("/templates");
       return;
@@ -61,6 +65,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const errorCode = params.get("error");
     if (errorCode) {
+      const step = params.get("step") || "";
+      const detail = params.get("detail") || "";
+      const msg = `فشل تسجيل الدخول [${errorCode}${step ? " @ " + step : ""}]${detail ? ": " + detail : ""}`;
+      setLoginError(msg);
       window.history.replaceState({}, "", window.location.pathname);
     }
   }, []);
@@ -84,6 +92,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [error, token, queryClient]);
 
   const login = useCallback(() => {
+    setLoginError(null);
     window.location.href = "/api/auth/login";
   }, []);
 
@@ -107,6 +116,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isLoading: isUserLoading && !!token,
         login,
         logout,
+        loginError,
       }}
     >
       {children}
