@@ -22,6 +22,11 @@ router.post("/admin/users", requireAdmin, async (req, res) => {
     return;
   }
 
+  if (isOwner === true && !req.user!.isOwner) {
+    res.status(403).json({ error: "فقط الـ Owner يمكنه منح صلاحية Owner" });
+    return;
+  }
+
   const existing = await db.query.adminsTable.findFirst({
     where: eq(adminsTable.discordId, discordId),
   });
@@ -34,7 +39,7 @@ router.post("/admin/users", requireAdmin, async (req, res) => {
   const [admin] = await db.insert(adminsTable).values({
     discordId,
     addedBy: req.user!.discordId,
-    isOwner: isOwner === true,
+    isOwner: isOwner === true && req.user!.isOwner,
   }).returning();
 
   res.status(201).json({ ...admin, createdAt: admin.createdAt.toISOString() });
