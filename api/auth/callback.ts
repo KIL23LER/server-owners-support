@@ -44,6 +44,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       id: string; username: string; global_name?: string; avatar?: string;
     };
 
+    // @ts-ignore - drizzle-orm 0.41 type inference issue with nullable columns
     await db.insert(usersTable).values({
       discordId: discordUser.id,
       username: discordUser.username,
@@ -51,6 +52,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       avatar: discordUser.avatar ?? null,
       accessToken: tokenData.access_token,
       refreshToken: tokenData.refresh_token,
+    // @ts-ignore
     }).onConflictDoUpdate({
       target: usersTable.discordId,
       set: {
