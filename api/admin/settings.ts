@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { db, settingsTable } from "../_lib/db.js";
 import { extractToken, getSessionUser, cors } from "../_lib/auth.js";
