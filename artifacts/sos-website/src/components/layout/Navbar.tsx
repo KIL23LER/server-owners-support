@@ -74,10 +74,11 @@ export function Navbar() {
           <Link href="/" className="flex items-center gap-2">
             <img
               src="https://cdn.discordapp.com/icons/264549513333702657/27eaa9612e3b89378485fbf9f001d97d.png"
-              alt="Server Owners Support"
+              alt={t("site.name")}
               className="w-8 h-8 rounded-full border border-primary/20"
             />
-            <span className="font-bold text-lg text-primary">SOS</span>
+            <span className="font-bold text-base text-primary hidden sm:inline">{t("site.name")}</span>
+            <span className="font-bold text-base text-primary sm:hidden">{t("site.shortName")}</span>
           </Link>
         </div>
 
