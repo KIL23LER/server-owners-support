@@ -1,7 +1,6 @@
 import { cp, mkdir, writeFile, rm } from "node:fs/promises";
 import { execSync } from "node:child_process";
 import { build as esbuild } from "esbuild";
-import esbuildPluginPino from "esbuild-plugin-pino";
 import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -83,7 +82,6 @@ await esbuild({
     "pino-abstract-transport",
     "sonic-boom",
   ],
-  plugins: [esbuildPluginPino({ transports: [] })],
   tsconfig: path.join(root, "artifacts/api-server/tsconfig.json"),
   banner: {
     js: `import { createRequire as __cr } from 'node:module';
