@@ -29,9 +29,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === "POST") {
     const { discordId: id, isOwner } = req.body;
     if (!id || typeof id !== "string") return res.status(400).json({ error: "Discord ID مطلوب" });
+    if (isOwner === true && !user.isOwner) return res.status(403).json({ error: "فقط الـ Owner يمكنه منح صلاحية Owner" });
     const existing = await db.query.adminsTable.findFirst({ where: eq(adminsTable.discordId, id) });
     if (existing) return res.status(409).json({ error: "هذا المستخدم أدمن مسبقاً" });
-    const [admin] = await db.insert(adminsTable).values({ discordId: id, addedBy: user.discordId, isOwner: isOwner === true }).returning();
+    const [admin] = await db.insert(adminsTable).values({ discordId: id, addedBy: user.discordId, isOwner: isOwner === true && user.isOwner }).returning();
     return res.status(201).json({ ...admin, createdAt: admin.createdAt.toISOString() });
   }
 
