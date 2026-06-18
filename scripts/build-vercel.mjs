@@ -80,7 +80,6 @@ await esbuild({
     "puppeteer-core",
     "playwright",
     "pino-pretty",
-    "thread-stream",
   ],
   tsconfig: path.join(root, "artifacts/api-server/tsconfig.json"),
   banner: {
