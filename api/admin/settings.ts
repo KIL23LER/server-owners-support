@@ -18,6 +18,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!value || typeof value !== "string") return res.status(400).json({ error: "القيمة مطلوبة" });
     await db.insert(settingsTable)
       .values({ key, value, updatedBy: user.discordId })
+      // @ts-ignore - drizzle-orm 0.41 type inference issue with timestamp defaults
       .onConflictDoUpdate({ target: settingsTable.key, set: { value, updatedAt: new Date(), updatedBy: user.discordId } });
     return res.json({ success: true, key, value });
   }
