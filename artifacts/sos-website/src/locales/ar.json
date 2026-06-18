@@ -1,5 +1,9 @@
 {
   "dir": "rtl",
+  "site": {
+    "name": "أصحاب السيرفرات",
+    "shortName": "SOS"
+  },
   "nav": {
     "home": "الرئيسية",
     "templates": "القوالب",
