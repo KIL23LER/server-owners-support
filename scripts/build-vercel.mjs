@@ -76,11 +76,7 @@ await esbuild({
     "puppeteer",
     "puppeteer-core",
     "playwright",
-    "thread-stream",
-    "pino",
-    "pino-std-serializers",
-    "pino-abstract-transport",
-    "sonic-boom",
+    "pino-pretty",
   ],
   tsconfig: path.join(root, "artifacts/api-server/tsconfig.json"),
   banner: {
