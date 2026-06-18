@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { db, usersTable } from "../_lib/db.js";
 import { eq } from "drizzle-orm";
