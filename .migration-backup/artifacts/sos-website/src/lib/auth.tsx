@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { useGetMe, useLogout, getGetMeQueryKey, User, setAuthTokenGetter } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 interface AuthContextType {
   user: User | null;
@@ -30,6 +31,14 @@ function clearToken(): void {
   setAuthTokenGetter(null);
 }
 
+function isUnauthorizedError(error: unknown): boolean {
+  if (!error) return false;
+  const status =
+    (error as { status?: number })?.status ??
+    (error as { response?: { status?: number } })?.response?.status;
+  return status === 401;
+}
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [token, setToken] = useState<string | null>(() => {
     const stored = getStoredToken();
@@ -53,6 +62,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const errorCode = params.get("error");
     if (errorCode) {
+      const step = params.get("step") || "";
+      const detail = params.get("detail") || "";
+      const msg = `فشل تسجيل الدخول (${errorCode}${step ? " - " + step : ""})${detail ? ": " + decodeURIComponent(detail) : ""}`;
+      toast.error(msg, { duration: 10000, id: "login-error" });
       window.history.replaceState({}, "", window.location.pathname);
     }
   }, []);
@@ -61,13 +74,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     query: {
       queryKey: getGetMeQueryKey(),
       enabled: !!token,
-      retry: false,
+      retry: 2,
+      retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 10000),
       staleTime: 5 * 60 * 1000,
     },
   });
 
   useEffect(() => {
-    if (error && token) {
+    if (error && token && isUnauthorizedError(error)) {
       clearToken();
       setToken(null);
       queryClient.clear();

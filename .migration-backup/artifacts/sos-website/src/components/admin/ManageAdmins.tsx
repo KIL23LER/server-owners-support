@@ -23,13 +23,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Trash2, UserPlus, ShieldAlert } from "lucide-react";
+import { Trash2, UserPlus, ShieldAlert, Crown } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/lib/auth";
 
 export default function ManageAdmins() {
   const [newAdminId, setNewAdminId] = useState("");
+  const [makeOwner, setMakeOwner] = useState(false);
   const [adminToRemove, setAdminToRemove] = useState<string | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   
   const { data: admins, isLoading } = useListAdmins({
     query: {
@@ -44,7 +48,7 @@ export default function ManageAdmins() {
     e.preventDefault();
     if (!newAdminId.trim()) return;
 
-    addAdmin.mutate({ data: { discordId: newAdminId } }, {
+    addAdmin.mutate({ data: { discordId: newAdminId, isOwner: makeOwner } }, {
       onSuccess: () => {
         toast({
           title: "تمت إضافة الإداري",
@@ -98,8 +102,8 @@ export default function ManageAdmins() {
           يمكن للمشرفين الوصول إلى لوحة التحكم، إضافة وقبول قوالب جديدة، وتعيين مشرفين آخرين.
         </p>
 
-        <form onSubmit={handleAddAdmin} className="flex gap-4 mb-8 p-4 bg-muted/30 rounded-lg border border-border/50">
-          <div className="flex-1">
+        <form onSubmit={handleAddAdmin} className="flex flex-wrap gap-3 mb-8 p-4 bg-muted/30 rounded-lg border border-border/50">
+          <div className="flex-1 min-w-[200px]">
             <Input 
               placeholder="معرف الديسكورد (Discord ID)" 
               value={newAdminId}
@@ -108,6 +112,18 @@ export default function ManageAdmins() {
               className="text-left"
             />
           </div>
+          {user?.isOwner && (
+            <label className="flex items-center gap-2 cursor-pointer text-sm text-muted-foreground select-none">
+              <input
+                type="checkbox"
+                checked={makeOwner}
+                onChange={(e) => setMakeOwner(e.target.checked)}
+                className="w-4 h-4"
+              />
+              <Crown className="h-4 w-4 text-yellow-500" />
+              Owner
+            </label>
+          )}
           <Button type="submit" disabled={!newAdminId.trim() || addAdmin.isPending}>
             {addAdmin.isPending ? "جاري الإضافة..." : (
               <>
@@ -123,6 +139,7 @@ export default function ManageAdmins() {
             <TableHeader>
               <TableRow className="bg-muted/50">
                 <TableHead>معرف الديسكورد</TableHead>
+                <TableHead>الرتبة</TableHead>
                 <TableHead>تاريخ التعيين</TableHead>
                 <TableHead>تم التعيين بواسطة</TableHead>
                 <TableHead className="text-left">إجراءات</TableHead>
@@ -133,6 +150,7 @@ export default function ManageAdmins() {
                 Array.from({ length: 3 }).map((_, i) => (
                   <TableRow key={i}>
                     <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-16" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-32" /></TableCell>
                     <TableCell><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
@@ -145,6 +163,15 @@ export default function ManageAdmins() {
                       {admin.discordId}
                     </TableCell>
                     <TableCell>
+                      {admin.isOwner ? (
+                        <Badge className="bg-yellow-500/20 text-yellow-600 border-yellow-500/30 gap-1">
+                          <Crown className="h-3 w-3" /> Owner
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary">مشرف</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
                       {new Date(admin.createdAt).toLocaleDateString('ar-SA')}
                     </TableCell>
                     <TableCell>
@@ -155,14 +182,16 @@ export default function ManageAdmins() {
                       )}
                     </TableCell>
                     <TableCell className="text-left">
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                        onClick={() => setAdminToRemove(admin.discordId)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      {!admin.isOwner && user?.isOwner && (
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={() => setAdminToRemove(admin.discordId)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))

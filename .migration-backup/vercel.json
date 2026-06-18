@@ -1,17 +1,9 @@
 {
-  "installCommand": "pnpm install --filter @workspace/sos-website... --filter \"...@workspace/api-server\"",
-  "buildCommand": "PORT=3000 BASE_PATH=/ pnpm --filter @workspace/sos-website build && pnpm --filter @workspace/api-server build",
-  "outputDirectory": "artifacts/sos-website/dist/public",
-  "functions": {
-    "api/index.mjs": {
-      "includeFiles": "artifacts/api-server/dist/**",
-      "memory": 512,
-      "maxDuration": 30
-    }
-  },
-  "routes": [
-    { "src": "/api/(.*)", "dest": "/api/index.mjs" },
-    { "handle": "filesystem" },
-    { "src": "/(.*)", "dest": "/index.html" }
+  "installCommand": "pnpm install --no-frozen-lockfile",
+  "rewrites": [
+    { "source": "/api/discord-template/:code", "destination": "/api/discord-template?code=:code" },
+    { "source": "/api/admin/users/:discordId", "destination": "/api/admin/users?discordId=:discordId" },
+    { "source": "/api/admin/settings/:key", "destination": "/api/admin/settings?key=:key" },
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }

@@ -1,6 +1,7 @@
-import { Switch, Route, Router as WouterRouter } from "wouter";
+import { Switch, Route, Redirect, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
+import { Toaster as SonnerToaster } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/lib/auth";
 import { Layout } from "@/components/layout/Layout";
@@ -8,7 +9,6 @@ import Home from "@/pages/Home";
 import Templates from "@/pages/Templates";
 import Admin from "@/pages/Admin";
 import TemplateCustomizer from "@/pages/TemplateCustomizer";
-import BotPage from "@/pages/BotPage";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient({
@@ -27,7 +27,9 @@ function Router() {
         <Route path="/" component={Home} />
         <Route path="/templates" component={Templates} />
         <Route path="/customize" component={TemplateCustomizer} />
-        <Route path="/bot" component={BotPage} />
+        <Route path="/bot">
+          <Redirect to="/customize" />
+        </Route>
         <Route path="/admin" component={Admin} />
         <Route component={NotFound} />
       </Switch>
@@ -44,6 +46,7 @@ export default function App() {
             <Router />
           </WouterRouter>
           <Toaster />
+          <SonnerToaster position="top-center" richColors />
         </TooltipProvider>
       </AuthProvider>
     </QueryClientProvider>

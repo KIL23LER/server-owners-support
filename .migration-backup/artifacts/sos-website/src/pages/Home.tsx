@@ -2,56 +2,90 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useListTemplates } from "@workspace/api-client-react";
+import { useListTemplates, useGetInvite } from "@workspace/api-client-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Users, Shield, Star, Award, MessageSquare, LayoutTemplate } from "lucide-react";
+import { Users, Shield, Star, Award, MessageSquare, LayoutTemplate, Bot, CheckCircle2, Zap, ShieldCheck } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export default function Home() {
+  const { t } = useTranslation();
   const { data: templates, isLoading } = useListTemplates({ featured: true }, {
-    query: {
-      queryKey: ["templates", "featured"]
-    }
+    query: { queryKey: ["templates", "featured"] }
   });
+  const { data: inviteData } = useGetInvite();
+  const inviteLink = inviteData?.invite ?? "https://discord.gg/264549513333702657";
 
   const sections = [
-    { name: "البداية", icon: MessageSquare, description: "نقطة انطلاقك في مجتمعنا، تعرف على القوانين وكيفية الاستفادة القصوى من الخادم." },
-    { name: "سيرفرك", icon: LayoutTemplate, description: "شارك سيرفرك، احصل على نصائح تطويرية، وتعرف على أصحاب سيرفرات أخرى." },
-    { name: "الأمان", icon: Shield, description: "أحدث ثغرات الديسكورد، وكيفية حماية سيرفرك من الاختراق والسبام." },
-    { name: "التقييم", icon: Star, description: "قيم سيرفرات الآخرين واحصل على تقييمات بناءة لسيرفرك من خبراء المجتمع." },
-    { name: "التقديم", icon: Users, description: "ابحث عن إداريين ومبرمجين لسيرفرك، أو قدم خبراتك لمساعدة الآخرين." },
-    { name: "كأس 2026", icon: Award, description: "تحديات وفعاليات خاصة بالمجتمع، شارك واربح جوائز قيمة." }
-  ];
+    { key: "start", icon: MessageSquare },
+    { key: "server", icon: LayoutTemplate },
+    { key: "security", icon: Shield },
+    { key: "rating", icon: Star },
+    { key: "apply", icon: Users },
+    { key: "cup", icon: Award },
+  ] as const;
 
   return (
     <div className="flex flex-col min-h-[calc(100vh-4rem)]">
-      {/* Hero Section */}
+      {/* Hero */}
       <section className="relative overflow-hidden bg-primary/5 py-24 lg:py-32">
         <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 opacity-10">
-          <img 
-            src="https://cdn.discordapp.com/banners/264549513333702657/4e64a1f5d48fff55ca767f84d0e99fe8.png" 
-            alt="Banner background" 
+          <img
+            src="https://cdn.discordapp.com/banners/264549513333702657/4e64a1f5d48fff55ca767f84d0e99fe8.png"
+            alt="Banner background"
             className="w-full h-full object-cover blur-sm"
           />
         </div>
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-3xl mx-auto text-center">
             <Badge className="mb-6 bg-primary/20 text-primary hover:bg-primary/30 border-primary/30 px-4 py-1.5 text-sm font-semibold">
-              أكثر من 550 صاحب سيرفر ديسكورد
+              {t("home.badge")}
             </Badge>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-foreground mb-6 leading-tight">
-              مجتمع أصحاب سيرفرات الديسكورد العربي الأول
+              {t("home.title")}
             </h1>
             <p className="text-lg md:text-xl text-muted-foreground mb-10 max-w-2xl mx-auto">
-              مكان يجمع أصحاب السيرفرات لتبادل الخبرات، مشاركة القوالب، والحصول على الدعم اللازم لبناء مجتمعات ناجحة.
+              {t("home.subtitle")}
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
               <Button size="lg" asChild className="text-base h-12 px-8 shadow-lg hover-elevate">
-                <a href="https://discord.gg/264549513333702657" target="_blank" rel="noopener noreferrer">
-                  انضم للسيرفر
+                <a href={inviteLink} target="_blank" rel="noopener noreferrer">
+                  {t("home.joinServer")}
                 </a>
               </Button>
               <Button size="lg" variant="outline" asChild className="text-base h-12 px-8 hover-elevate">
-                <Link href="/templates">اكتشف القوالب</Link>
+                <Link href="/templates">{t("home.exploreTemplates")}</Link>
+              </Button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Bot Banner */}
+      <section className="py-12 px-4 bg-gradient-to-r from-[#5865F2]/10 via-[#5865F2]/5 to-transparent border-y border-[#5865F2]/20">
+        <div className="container mx-auto max-w-5xl">
+          <div className="flex flex-col md:flex-row items-center gap-8">
+            <div className="flex-shrink-0 w-20 h-20 rounded-2xl bg-[#5865F2]/15 flex items-center justify-center border border-[#5865F2]/30">
+              <Bot className="w-10 h-10 text-[#5865F2]" />
+            </div>
+            <div className="flex-1 text-center md:text-start">
+              <div className="inline-flex items-center gap-2 bg-[#5865F2]/10 text-[#5865F2] text-xs font-bold px-3 py-1 rounded-full mb-2 border border-[#5865F2]/20">
+                <Zap className="w-3 h-3" />
+                {t("home.botBadge")}
+              </div>
+              <h2 className="text-2xl font-bold mb-2">{t("home.botTitle")}</h2>
+              <p className="text-muted-foreground mb-4 max-w-xl">{t("home.botDesc")}</p>
+              <div className="flex flex-wrap gap-3 justify-center md:justify-start text-sm text-muted-foreground mb-4">
+                <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-green-500" />{t("home.botFeat1")}</span>
+                <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-green-500" />{t("home.botFeat2")}</span>
+                <span className="flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-green-500" />{t("home.botFeat3")}</span>
+              </div>
+            </div>
+            <div className="flex-shrink-0">
+              <Button asChild size="lg" className="bg-[#5865F2] hover:bg-[#4752C4] text-white font-bold h-12 px-6 gap-2 shadow-lg">
+                <Link href="/bot">
+                  <Bot className="w-5 h-5" />
+                  {t("home.botCta")}
+                </Link>
               </Button>
             </div>
           </div>
@@ -62,21 +96,21 @@ export default function Home() {
       <section className="py-20 bg-background">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold mb-4">أقسام المجتمع</h2>
+            <h2 className="text-3xl font-bold mb-4">{t("home.sectionsTitle")}</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto text-lg">
-              تعرف على الأقسام المختلفة في سيرفرنا وكيف يمكنك الاستفادة منها لتطوير سيرفرك
+              {t("home.sectionsSubtitle")}
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-            {sections.map((section, index) => (
-              <Card key={index} className="border-border/50 bg-card/50 hover:bg-card transition-all duration-300 hover:shadow-md hover-elevate group">
+            {sections.map(({ key, icon: Icon }) => (
+              <Card key={key} className="border-border/50 bg-card/50 hover:bg-card transition-all duration-300 hover:shadow-md hover-elevate group">
                 <CardContent className="p-6">
                   <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-6 group-hover:scale-110 group-hover:bg-primary/20 transition-all duration-300">
-                    <section.icon className="w-6 h-6 text-primary" />
+                    <Icon className="w-6 h-6 text-primary" />
                   </div>
-                  <h3 className="text-xl font-bold mb-3">{section.name}</h3>
+                  <h3 className="text-xl font-bold mb-3">{t(`home.sections.${key}.name`)}</h3>
                   <p className="text-muted-foreground leading-relaxed">
-                    {section.description}
+                    {t(`home.sections.${key}.desc`)}
                   </p>
                 </CardContent>
               </Card>
@@ -85,19 +119,19 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Featured Templates Teaser */}
+      {/* Featured Templates */}
       <section className="py-20 bg-muted/30">
         <div className="container mx-auto px-4">
           <div className="flex justify-between items-end mb-12">
             <div>
-              <h2 className="text-3xl font-bold mb-3">قوالب مميزة</h2>
-              <p className="text-muted-foreground text-lg">قوالب جاهزة لبناء سيرفرك بضغطة زر</p>
+              <h2 className="text-3xl font-bold mb-3">{t("home.featuredTitle")}</h2>
+              <p className="text-muted-foreground text-lg">{t("home.featuredSubtitle")}</p>
             </div>
             <Button variant="ghost" asChild className="hidden sm:flex hover:bg-primary/10 hover:text-primary">
-              <Link href="/templates">عرض كل القوالب</Link>
+              <Link href="/templates">{t("home.viewAll")}</Link>
             </Button>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {isLoading ? (
               Array.from({ length: 3 }).map((_, i) => (
@@ -112,9 +146,9 @@ export default function Home() {
                 <Card key={template.id} className="overflow-hidden border-border/50 hover-elevate transition-all duration-300">
                   {template.imageUrl && (
                     <div className="h-48 w-full overflow-hidden bg-muted">
-                      <img 
-                        src={template.imageUrl} 
-                        alt={template.name} 
+                      <img
+                        src={template.imageUrl}
+                        alt={template.name}
                         className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
                       />
                     </div>
@@ -130,21 +164,21 @@ export default function Home() {
                       {template.description}
                     </p>
                     <Button asChild className="w-full">
-                      <Link href={`/templates`}>عرض التفاصيل</Link>
+                      <Link href="/bot">{t("home.applyWithBot")}</Link>
                     </Button>
                   </CardContent>
                 </Card>
               ))
             ) : (
               <div className="col-span-3 text-center py-12 text-muted-foreground">
-                لا توجد قوالب مميزة حالياً
+                {t("home.noFeatured")}
               </div>
             )}
           </div>
-          
+
           <div className="mt-8 text-center sm:hidden">
             <Button variant="outline" asChild className="w-full">
-              <Link href="/templates">عرض كل القوالب</Link>
+              <Link href="/templates">{t("home.viewAll")}</Link>
             </Button>
           </div>
         </div>

@@ -16,6 +16,12 @@ tags:
     description: Discord templates
   - name: discord
     description: Discord data
+  - name: settings
+    description: Site settings
+  - name: admin
+    description: Admin operations
+  - name: bot
+    description: Discord bot operations
 paths:
   /healthz:
     get:
@@ -280,6 +286,86 @@ paths:
               schema:
                 $ref: "#/components/schemas/SuccessResponse"
 
+  /bot/apply:
+    post:
+      operationId: applyBotTemplate
+      tags: [bot]
+      summary: Apply a template to a Discord guild via bot
+      security:
+        - sessionToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BotApplyInput"
+      responses:
+        "200":
+          description: Template applied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Template not found
+
+  /settings/invite:
+    get:
+      operationId: getInvite
+      tags: [settings]
+      summary: Get Discord invite link
+      responses:
+        "200":
+          description: Invite link
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InviteResponse"
+
+  /admin/settings:
+    get:
+      operationId: getAdminSettings
+      tags: [admin]
+      summary: Get all settings (admin)
+      security:
+        - sessionToken: []
+      responses:
+        "200":
+          description: Settings map
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SettingsMap"
+
+  /admin/settings/{key}:
+    put:
+      operationId: updateSetting
+      tags: [admin]
+      summary: Update a setting (admin)
+      security:
+        - sessionToken: []
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSettingInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpdateSettingResult"
+
 components:
   securitySchemes:
     sessionToken:
@@ -310,10 +396,13 @@ components:
           nullable: true
         isAdmin:
           type: boolean
+        isOwner:
+          type: boolean
       required:
         - discordId
         - username
         - isAdmin
+        - isOwner
 
     Guild:
       type: object
@@ -428,12 +517,15 @@ components:
           type: string
         addedBy:
           type: string
+        isOwner:
+          type: boolean
         createdAt:
           type: string
       required:
         - id
         - discordId
         - addedBy
+        - isOwner
         - createdAt
 
     AddAdminInput:
@@ -441,8 +533,56 @@ components:
       properties:
         discordId:
           type: string
+        isOwner:
+          type: boolean
       required:
         - discordId
+
+    InviteResponse:
+      type: object
+      properties:
+        invite:
+          type: string
+      required:
+        - invite
+
+    SettingsMap:
+      type: object
+      additionalProperties:
+        type: string
+
+    UpdateSettingInput:
+      type: object
+      properties:
+        value:
+          type: string
+      required:
+        - value
+
+    UpdateSettingResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+        key:
+          type: string
+        value:
+          type: string
+      required:
+        - success
+        - key
+        - value
+
+    BotApplyInput:
+      type: object
+      properties:
+        guildId:
+          type: string
+        templateId:
+          type: integer
+      required:
+        - guildId
+        - templateId
 
     SuccessResponse:
       type: object
