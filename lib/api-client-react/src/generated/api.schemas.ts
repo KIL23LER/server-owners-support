@@ -94,6 +94,9 @@ export interface UpdateSettingResult {
 export interface BotApplyInput {
   guildId: string;
   templateId: number;
+  customizations?: {
+    channelEmojis?: Record<string, string>;
+  };
 }
 
 export interface SuccessResponse {
@@ -104,4 +107,5 @@ export type ListTemplatesParams = {
 category?: string;
 featured?: boolean;
 };
+
 
