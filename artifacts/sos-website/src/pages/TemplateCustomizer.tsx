@@ -669,7 +669,7 @@ function ApplyWithBot({
     if (!selectedGuildId || !template) return;
     setApplyState("applying");
     applyBot.mutate(
-      { data: { guildId: selectedGuildId, templateId: template.id } },
+      { data: { guildId: selectedGuildId, templateId: template.id, customizations: { channelEmojis: customization.channelEmojis } } },
       {
         onSuccess: () => {
           setApplyState("done");
@@ -1164,3 +1164,4 @@ function EmojiPickerInline({
     </div>
   );
 }
+
