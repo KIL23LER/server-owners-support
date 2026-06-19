@@ -59,8 +59,6 @@ await esbuild({
     "oracledb",
     "better-sqlite3",
     "sqlite3",
-    "pg",
-    "@types/pg",
     "dd-trace",
     "newrelic",
     "snappy",
