@@ -44,7 +44,8 @@ router.post("/bot/apply", requireAuth, async (req, res) => {
     return;
   }
 
-  const { guildId, templateId } = req.body;
+  const { guildId, templateId, customizations } = req.body;
+  const channelEmojis: Record<string, string> = (customizations?.channelEmojis ?? {}) as Record<string, string>;
 
   if (!guildId || !templateId) {
     res.status(400).json({ error: "guildId و templateId مطلوبان" });
@@ -157,10 +158,12 @@ router.post("/bot/apply", requireAuth, async (req, res) => {
   for (const ch of source.channels ?? []) {
     if (ch.type === 4) continue;
     const parentId = ch.parent_id ? categoryIdMap[ch.parent_id] : undefined;
+    const customEmoji = channelEmojis[ch.id] ?? "";
+    const channelName = customEmoji ? `${customEmoji}${ch.name}` : ch.name;
     const r = await discordRequest(`/guilds/${guildId}/channels`, {
       method: "POST",
       body: JSON.stringify({
-        name: ch.name,
+        name: channelName,
         type: ch.type ?? 0,
         position: ch.position ?? 0,
         ...(parentId ? { parent_id: parentId } : {}),
@@ -185,3 +188,4 @@ router.post("/bot/apply", requireAuth, async (req, res) => {
 });
 
 export default router;
+
