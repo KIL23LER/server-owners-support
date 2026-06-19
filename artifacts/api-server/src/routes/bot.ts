@@ -32,12 +32,39 @@ async function getUserGuilds(accessToken: string): Promise<string[]> {
 }
 
 async function isBotInGuild(guildId: string): Promise<boolean> {
-  const res = await discordRequest(`/guilds/${guildId}/members/@me`);
+  // Try fetching the guild with bot token — works if bot is a member
+  const res = await discordRequest(`/guilds/${guildId}`);
   return res.status === 200;
+}
+
+function hexToInt(hex: string): number {
+  const cleaned = hex.replace("#", "");
+  const parsed = parseInt(cleaned, 16);
+  return isNaN(parsed) ? 0 : parsed;
 }
 
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+// ─── Check if bot is in a guild ───────────────────────────────────────────────
+router.get("/bot/check/:guildId", requireAuth, async (req, res) => {
+  if (!BOT_TOKEN) {
+    res.status(500).json({ error: "البوت غير مُعدّ في السيرفر" });
+    return;
+  }
+  const { guildId } = req.params;
+  if (!guildId || !/^\d+$/.test(guildId)) {
+    res.status(400).json({ error: "معرف السيرفر غير صالح" });
+    return;
+  }
+  try {
+    const present = await isBotInGuild(guildId);
+    res.json({ present });
+  } catch {
+    res.status(502).json({ error: "تعذّر التحقق من وجود البوت" });
+  }
+});
+
+// ─── Apply bot template ────────────────────────────────────────────────────────
 router.post("/bot/apply", requireAuth, async (req, res) => {
   if (!BOT_TOKEN) {
     res.status(500).json({ error: "البوت غير مُعدّ في السيرفر" });
@@ -46,6 +73,10 @@ router.post("/bot/apply", requireAuth, async (req, res) => {
 
   const { guildId, templateId, customizations } = req.body;
   const channelEmojis: Record<string, string> = (customizations?.channelEmojis ?? {}) as Record<string, string>;
+  const channelDecoration: string = typeof customizations?.channelDecoration === "string"
+    ? customizations.channelDecoration
+    : "";
+  const roleColors: Record<string, string> = (customizations?.roleColors ?? {}) as Record<string, string>;
 
   if (!guildId || !templateId) {
     res.status(400).json({ error: "guildId و templateId مطلوبان" });
@@ -71,7 +102,7 @@ router.post("/bot/apply", requireAuth, async (req, res) => {
   const botPresent = await isBotInGuild(String(guildId));
   if (!botPresent) {
     res.status(400).json({
-      error: "البوت غير موجود في سيرفرك. الرجاء دعوة البوت أولاً عبر زر 'دعوة البوت' ثم حاول مجدداً.",
+      error: "البوت غير موجود في سيرفرك. الرجاء دعوة البوت أولاً عبر زر «أضف البوت» ثم اضغط «تحقق» وحاول مجدداً.",
     });
     return;
   }
@@ -110,14 +141,19 @@ router.post("/bot/apply", requireAuth, async (req, res) => {
   const errors: string[] = [];
   const roleIdMap: Record<string, string> = {};
 
-  // إنشاء الرولات
+  // إنشاء الرولات مع تطبيق الألوان المخصصة
   for (const role of source.roles ?? []) {
     if (role.name === "@everyone") continue;
+
+    // استخدم اللون المخصص إن وجد، وإلا استخدم لون القالب
+    const customColorHex = roleColors[String(role.id)];
+    const finalColor = customColorHex ? hexToInt(customColorHex) : (role.color ?? 0);
+
     const r = await discordRequest(`/guilds/${guildId}/roles`, {
       method: "POST",
       body: JSON.stringify({
         name: role.name,
-        color: role.color ?? 0,
+        color: finalColor,
         permissions: String(role.permissions ?? "0"),
         mentionable: role.mentionable ?? false,
         hoist: role.hoist ?? false,
@@ -154,12 +190,17 @@ router.post("/bot/apply", requireAuth, async (req, res) => {
     await delay(50);
   }
 
-  // إنشاء القنوات
+  // إنشاء القنوات مع تطبيق الإيموجي والزغرفة المخصصة
   for (const ch of source.channels ?? []) {
     if (ch.type === 4) continue;
     const parentId = ch.parent_id ? categoryIdMap[ch.parent_id] : undefined;
-    const customEmoji = channelEmojis[ch.id] ?? "";
-    const channelName = customEmoji ? `${customEmoji}${ch.name}` : ch.name;
+
+    // بناء اسم القناة: زغرفة + إيموجي + الاسم
+    const customEmoji = channelEmojis[String(ch.id)] ?? "";
+    const prefix = channelDecoration + customEmoji;
+    const baseName = ch.name.replace(/^[^\w\u0600-\u06FF\s]+[\s・\-_]?/, "").trim() || ch.name;
+    const channelName = prefix ? `${prefix}${baseName}` : ch.name;
+
     const r = await discordRequest(`/guilds/${guildId}/channels`, {
       method: "POST",
       body: JSON.stringify({
@@ -188,4 +229,3 @@ router.post("/bot/apply", requireAuth, async (req, res) => {
 });
 
 export default router;
-
