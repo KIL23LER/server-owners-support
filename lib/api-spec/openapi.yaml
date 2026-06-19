@@ -580,6 +580,13 @@ components:
           type: string
         templateId:
           type: integer
+        customizations:
+          type: object
+          properties:
+            channelEmojis:
+              type: object
+              additionalProperties:
+                type: string
       required:
         - guildId
         - templateId
@@ -591,3 +598,4 @@ components:
           type: boolean
       required:
         - success
+
