@@ -1,1 +1,1 @@
-{"buildCommand":"node scripts/build-vercel.mjs"}
+{"buildCommand":"node scripts/build-vercel.mjs","framework":null}
