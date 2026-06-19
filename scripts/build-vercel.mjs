@@ -67,6 +67,7 @@ await esbuild({
     "puppeteer-core",
     "playwright",
     "pino-pretty",
+    "thread-stream",
   ],
   tsconfig: path.join(root, "artifacts/api-server/tsconfig.json"),
   banner: {
@@ -88,6 +89,7 @@ await writeFile(
     handler: "index.mjs",
     launcherType: "Nodejs",
     shouldAddHelpers: true,
+    maxDuration: 60,
   })
 );
 
