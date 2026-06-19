@@ -47,7 +47,9 @@ router.get("/auth/callback", async (req, res) => {
     });
 
     if (!tokenRes.ok) {
-      res.redirect("/?error=token_failed");
+      const body = await tokenRes.text().catch(() => "");
+      req.log.error({ status: tokenRes.status, body }, "Discord token exchange failed");
+      res.redirect(`/?error=token_failed&step=discord&detail=${encodeURIComponent(body.slice(0, 200))}`);
       return;
     }
 
@@ -58,7 +60,9 @@ router.get("/auth/callback", async (req, res) => {
     });
 
     if (!userRes.ok) {
-      res.redirect("/?error=user_failed");
+      const body = await userRes.text().catch(() => "");
+      req.log.error({ status: userRes.status, body }, "Discord user fetch failed");
+      res.redirect(`/?error=user_failed&step=discord&detail=${encodeURIComponent(body.slice(0, 200))}`);
       return;
     }
 
@@ -117,7 +121,8 @@ router.get("/auth/callback", async (req, res) => {
     }
   } catch (err) {
     req.log.error({ err }, "OAuth callback error");
-    res.redirect("/?error=server_error");
+    const msg = err instanceof Error ? err.message : String(err);
+    res.redirect(`/?error=server_error&step=db&detail=${encodeURIComponent(msg.slice(0, 200))}`);
   }
 });
 
