@@ -1,1 +1,1 @@
-{}
+{"buildCommand":"node scripts/build-vercel.mjs"}
