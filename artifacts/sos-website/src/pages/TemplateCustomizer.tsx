@@ -597,6 +597,7 @@ export default function TemplateCustomizer() {
       {/* ── Apply with Bot ───────────────────────────────────────────── */}
       <ApplyWithBot
         template={selectedTemplate!}
+        customization={customization}
         user={user}
         onLogin={login}
         selectedGuildId={selectedGuildId}
@@ -642,9 +643,10 @@ export default function TemplateCustomizer() {
 // ─── Apply With Bot ───────────────────────────────────────────────────────────
 
 function ApplyWithBot({
-  template, user, onLogin, selectedGuildId, setSelectedGuildId, botAdded, setBotAdded,
+  template, customization, user, onLogin, selectedGuildId, setSelectedGuildId, botAdded, setBotAdded,
 }: {
   template: Template;
+  customization: CustomizationState;
   user: any;
   onLogin: () => void;
   selectedGuildId: string | null;
@@ -655,6 +657,9 @@ function ApplyWithBot({
   const { toast } = useToast();
   const applyBot = useApplyBotTemplate();
   const [applyState, setApplyState] = useState<"idle" | "applying" | "done" | "error">("idle");
+  const [errorMsg, setErrorMsg] = useState<string>("");
+  const [checkingBot, setCheckingBot] = useState(false);
+  const [botVerified, setBotVerified] = useState(false);
 
   const { data: guilds, isLoading: guildsLoading } = useGetMyGuilds({
     query: { queryKey: ["my-guilds"], enabled: !!user, retry: 1 },
@@ -665,19 +670,56 @@ function ApplyWithBot({
     ? `${BOT_INVITE}&guild_id=${selectedGuildId}&disable_guild_select=true`
     : BOT_INVITE;
 
+  const handleVerifyBot = async () => {
+    if (!selectedGuildId) return;
+    setCheckingBot(true);
+    setBotVerified(false);
+    try {
+      const res = await fetch(`${BASE}/api/bot/check/${selectedGuildId}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("sos_session")}` },
+      });
+      const data = await res.json();
+      if (data.present) {
+        setBotVerified(true);
+        setBotAdded(true);
+        toast({ title: "✅ تم التحقق", description: "البوت موجود في السيرفر وجاهز للتطبيق." });
+      } else {
+        setBotVerified(false);
+        toast({ variant: "destructive", title: "البوت غير موجود", description: "تأكد أنك أضفت البوت للسيرفر الصحيح ثم حاول مجدداً." });
+      }
+    } catch {
+      toast({ variant: "destructive", title: "خطأ", description: "تعذّر التحقق. حاول مرة أخرى." });
+    } finally {
+      setCheckingBot(false);
+    }
+  };
+
   const handleApply = () => {
     if (!selectedGuildId || !template) return;
     setApplyState("applying");
+    setErrorMsg("");
     applyBot.mutate(
-      { data: { guildId: selectedGuildId, templateId: template.id, customizations: { channelEmojis: customization.channelEmojis } } },
+      {
+        data: {
+          guildId: selectedGuildId,
+          templateId: template.id,
+          customizations: {
+            channelEmojis: customization.channelEmojis,
+            channelDecoration: customization.channelDecoration,
+            roleColors: customization.roleColors,
+          },
+        },
+      },
       {
         onSuccess: () => {
           setApplyState("done");
           toast({ title: "✅ تم تطبيق القالب!", description: "البوت طبّق القالب وغادر السيرفر تلقائياً." });
         },
         onError: (err: any) => {
+          const msg = err?.response?.data?.error || err?.message || "حدث خطأ أثناء تطبيق القالب.";
           setApplyState("error");
-          toast({ variant: "destructive", title: "فشل التطبيق", description: err?.message || "حدث خطأ أثناء تطبيق القالب." });
+          setErrorMsg(msg);
+          toast({ variant: "destructive", title: "فشل التطبيق", description: msg });
         },
       },
     );
@@ -699,7 +741,7 @@ function ApplyWithBot({
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {[
               { icon: <Users className="w-5 h-5 text-[#5865F2]" />, num: "١", title: "اختر سيرفرك", desc: "سجّل دخولك واختر السيرفر الذي تريد تطبيق القالب عليه.", done: !!selectedGuildId },
-              { icon: <Bot className="w-5 h-5 text-yellow-500" />, num: "٢", title: "أضف البوت", desc: "اضغط زر إضافة البوت — سيُضاف مباشرة للسيرفر المختار.", done: botAdded },
+              { icon: <Bot className="w-5 h-5 text-yellow-500" />, num: "٢", title: "أضف البوت وتحقق", desc: "أضف البوت للسيرفر المختار ثم اضغط «تحقق» للتأكد.", done: botVerified },
               { icon: <Zap className="w-5 h-5 text-green-500" />, num: "٣", title: "طبّق القالب", desc: "اضغط تطبيق القالب — البوت ينشئ القنوات والرتب ثم يغادر تلقائياً.", done: applyState === "done" },
             ].map((step) => (
               <div key={step.num} className={`relative rounded-xl p-4 border transition-colors ${step.done ? "border-green-500/40 bg-green-500/5" : "border-border/40 bg-muted/40"}`}>
@@ -735,7 +777,13 @@ function ApplyWithBot({
                   {guilds.map((g) => (
                     <button
                       key={g.id}
-                      onClick={() => { setSelectedGuildId(g.id); setBotAdded(false); setApplyState("idle"); }}
+                      onClick={() => {
+                        setSelectedGuildId(g.id);
+                        setBotAdded(false);
+                        setBotVerified(false);
+                        setApplyState("idle");
+                        setErrorMsg("");
+                      }}
                       className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-all ${
                         selectedGuildId === g.id
                           ? "border-[#5865F2] bg-[#5865F2]/10 text-[#5865F2] font-bold"
@@ -759,34 +807,57 @@ function ApplyWithBot({
             </div>
           )}
 
-          {/* Step 2: Add bot button */}
+          {/* Step 2: Add bot + verify */}
           {selectedGuild && (
-            <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center rounded-xl border border-border/50 bg-muted/30 p-4">
-              <div className="flex-1">
-                <p className="text-sm font-semibold">أضف البوت لـ "{selectedGuild.name}"</p>
-                <p className="text-xs text-muted-foreground mt-0.5">سيفتح رابط ديسكورد مباشرةً للسيرفر المختار</p>
+            <div className="rounded-xl border border-border/50 bg-muted/30 p-4 space-y-3">
+              <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+                <div className="flex-1">
+                  <p className="text-sm font-semibold">أضف البوت لـ "{selectedGuild.name}"</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">افتح رابط ديسكورد وأضف البوت للسيرفر المختار</p>
+                </div>
+                <a
+                  href={botInviteUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setBotAdded(true)}
+                >
+                  <Button className="bg-[#5865F2] hover:bg-[#4752C4] text-white font-bold gap-2 whitespace-nowrap">
+                    <Bot className="w-4 h-4" />
+                    {botAdded ? "أُضيف البوت ✓" : "أضف البوت"}
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </Button>
+                </a>
               </div>
-              <a
-                href={botInviteUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => setBotAdded(true)}
-              >
-                <Button className="bg-[#5865F2] hover:bg-[#4752C4] text-white font-bold gap-2 whitespace-nowrap">
-                  <Bot className="w-4 h-4" />
-                  {botAdded ? "أُضيف البوت ✓" : "أضف البوت"}
-                  <ExternalLink className="w-3.5 h-3.5" />
-                </Button>
-              </a>
+              {botAdded && !botVerified && (
+                <div className="flex items-center gap-3 pt-1 border-t border-border/40">
+                  <p className="text-xs text-muted-foreground flex-1">بعد إضافة البوت، اضغط للتحقق من وجوده في السيرفر:</p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleVerifyBot}
+                    disabled={checkingBot}
+                    className="gap-2 whitespace-nowrap border-[#5865F2]/40 text-[#5865F2] hover:bg-[#5865F2]/10"
+                  >
+                    {checkingBot ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                    تحقق من وجود البوت في السيرفر
+                  </Button>
+                </div>
+              )}
+              {botVerified && (
+                <div className="flex items-center gap-2 text-xs text-green-600 pt-1 border-t border-border/40">
+                  <Check className="w-3.5 h-3.5 shrink-0" />
+                  <span>تم التحقق — البوت موجود في السيرفر</span>
+                </div>
+              )}
             </div>
           )}
 
           {/* Step 3: Apply button */}
-          {selectedGuild && botAdded && applyState !== "done" && (
+          {selectedGuild && botVerified && applyState !== "done" && (
             <div className="rounded-xl border border-green-500/30 bg-green-500/5 p-4 flex flex-col sm:flex-row gap-3 items-start sm:items-center">
               <div className="flex-1">
                 <p className="text-sm font-semibold text-green-700 dark:text-green-400">البوت جاهز — طبّق القالب الآن</p>
-                <p className="text-xs text-muted-foreground mt-0.5">سيُنشئ البوت القنوات والرتب ثم يغادر تلقائياً</p>
+                <p className="text-xs text-muted-foreground mt-0.5">سيُنشئ البوت القنوات والرتب بتخصيصاتك ثم يغادر تلقائياً</p>
               </div>
               <Button
                 onClick={handleApply}
@@ -804,13 +875,25 @@ function ApplyWithBot({
 
           {/* Error state */}
           {applyState === "error" && (
-            <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 flex items-center gap-3">
-              <AlertCircle className="w-5 h-5 text-destructive shrink-0" />
-              <div className="flex-1">
-                <p className="text-sm font-semibold text-destructive">فشل التطبيق</p>
-                <p className="text-xs text-muted-foreground">تحقق من أن البوت مضاف للسيرفر بصلاحية مدير، ثم أعد المحاولة.</p>
+            <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 space-y-2">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-destructive">فشل التطبيق</p>
+                  {errorMsg && <p className="text-xs text-destructive/80 mt-0.5">{errorMsg}</p>}
+                  <p className="text-xs text-muted-foreground mt-1">
+                    تأكد أن البوت مضاف للسيرفر الصحيح بصلاحية مدير، ثم اضغط «تحقق من جديد».
+                  </p>
+                </div>
               </div>
-              <Button variant="outline" size="sm" onClick={() => setApplyState("idle")}>إعادة المحاولة</Button>
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" onClick={() => { setApplyState("idle"); setBotVerified(false); setBotAdded(false); setErrorMsg(""); }}>
+                  تحقق من جديد
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => { setApplyState("idle"); setErrorMsg(""); }}>
+                  إعادة المحاولة
+                </Button>
+              </div>
             </div>
           )}
 
