@@ -32,7 +32,7 @@ console.log("⚡ Building serverless function...");
 const funcDir = path.join(output, "functions/api.func");
 await mkdir(funcDir, { recursive: true });
 
-const result = await esbuild({
+await esbuild({
   entryPoints: [path.join(root, "artifacts/api-server/src/serverless.ts")],
   platform: "node",
   target: "node20",
@@ -40,9 +40,7 @@ const result = await esbuild({
   format: "esm",
   outfile: path.join(funcDir, "index.mjs"),
   logLevel: "warning",
-  define: {
-    "process.env.NODE_ENV": '"production"',
-  },
+  define: { "process.env.NODE_ENV": '"production"' },
   external: [
     "*.node",
     "pg-native",
@@ -58,19 +56,8 @@ const result = await esbuild({
     "oracledb",
     "better-sqlite3",
     "sqlite3",
-    "@aws-sdk/*",
-    "@azure/*",
-    "@google-cloud/*",
-    "googleapis",
-    "firebase-admin",
-    "nodemailer",
-    "handlebars",
-    "knex",
-    "typeorm",
-    "sequelize",
-    "prisma",
-    "@prisma/client",
-    "mysql2",
+    "pg",
+    "@types/pg",
     "dd-trace",
     "newrelic",
     "snappy",
@@ -92,10 +79,7 @@ globalThis.__dirname = __p.dirname(globalThis.__filename);`,
   },
 });
 
-if (result.warnings.length > 0) {
-  console.warn("⚠️  esbuild warnings:", result.warnings.map(w => w.text).join(", "));
-}
-console.log("✓ Serverless function built successfully");
+console.log("✓ Serverless function built");
 
 await writeFile(
   path.join(funcDir, ".vc-config.json"),
@@ -107,7 +91,6 @@ await writeFile(
   })
 );
 
-console.log("🗺️ Writing routing config...");
 await writeFile(
   path.join(output, "config.json"),
   JSON.stringify({
