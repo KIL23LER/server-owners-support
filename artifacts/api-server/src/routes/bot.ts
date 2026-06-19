@@ -31,6 +31,13 @@ async function getUserGuilds(accessToken: string): Promise<string[]> {
     .map((g) => g.id);
 }
 
+async function isBotInGuild(guildId: string): Promise<boolean> {
+  const res = await discordRequest(`/guilds/${guildId}/members/@me`);
+  return res.status === 200;
+}
+
+const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 router.post("/bot/apply", requireAuth, async (req, res) => {
   if (!BOT_TOKEN) {
     res.status(500).json({ error: "البوت غير مُعدّ في السيرفر" });
@@ -59,6 +66,15 @@ router.post("/bot/apply", requireAuth, async (req, res) => {
     return;
   }
 
+  // تحقق أن البوت موجود في السيرفر قبل أي عملية
+  const botPresent = await isBotInGuild(String(guildId));
+  if (!botPresent) {
+    res.status(400).json({
+      error: "البوت غير موجود في سيرفرك. الرجاء دعوة البوت أولاً عبر زر 'دعوة البوت' ثم حاول مجدداً.",
+    });
+    return;
+  }
+
   const template = await db.query.templatesTable.findFirst({
     where: eq(templatesTable.id, Number(templateId)),
   });
@@ -76,13 +92,13 @@ router.post("/bot/apply", requireAuth, async (req, res) => {
 
   const tplRes = await discordRequest(`/guilds/templates/${templateCode}`);
   if (!tplRes.ok) {
-    const errBody = await tplRes.text();
-    console.error("Discord template fetch failed:", tplRes.status, errBody);
-    res.status(400).json({ error: "فشل جلب بيانات القالب من Discord" });
+    const errBody = await tplRes.text().catch(() => "");
+    req.log.error({ status: tplRes.status, errBody }, "Discord template fetch failed");
+    res.status(400).json({ error: "فشل جلب بيانات القالب من Discord. تأكد أن كود القالب صحيح." });
     return;
   }
 
-  const tplData = await tplRes.json() as any;
+  const tplData = (await tplRes.json()) as any;
   const source = tplData.serialized_source_guild;
 
   if (!source) {
@@ -90,8 +106,10 @@ router.post("/bot/apply", requireAuth, async (req, res) => {
     return;
   }
 
+  const errors: string[] = [];
   const roleIdMap: Record<string, string> = {};
 
+  // إنشاء الرولات
   for (const role of source.roles ?? []) {
     if (role.name === "@everyone") continue;
     const r = await discordRequest(`/guilds/${guildId}/roles`, {
@@ -105,14 +123,19 @@ router.post("/bot/apply", requireAuth, async (req, res) => {
       }),
     });
     if (r.ok) {
-      const newRole = await r.json() as any;
+      const newRole = (await r.json()) as any;
       roleIdMap[role.id] = newRole.id;
+    } else {
+      const body = await r.text().catch(() => "");
+      req.log.warn({ status: r.status, body, roleName: role.name }, "Failed to create role");
+      errors.push(`فشل إنشاء رول: ${role.name}`);
     }
-    await new Promise((resolve) => setTimeout(resolve, 300));
+    await delay(50);
   }
 
   const categoryIdMap: Record<string, string> = {};
 
+  // إنشاء الكاتيجوريات
   for (const ch of source.channels ?? []) {
     if (ch.type !== 4) continue;
     const r = await discordRequest(`/guilds/${guildId}/channels`, {
@@ -120,16 +143,21 @@ router.post("/bot/apply", requireAuth, async (req, res) => {
       body: JSON.stringify({ name: ch.name, type: 4, position: ch.position ?? 0 }),
     });
     if (r.ok) {
-      const newCh = await r.json() as any;
+      const newCh = (await r.json()) as any;
       categoryIdMap[ch.id] = newCh.id;
+    } else {
+      const body = await r.text().catch(() => "");
+      req.log.warn({ status: r.status, body, chName: ch.name }, "Failed to create category");
+      errors.push(`فشل إنشاء كاتيجوري: ${ch.name}`);
     }
-    await new Promise((resolve) => setTimeout(resolve, 300));
+    await delay(50);
   }
 
+  // إنشاء القنوات
   for (const ch of source.channels ?? []) {
     if (ch.type === 4) continue;
     const parentId = ch.parent_id ? categoryIdMap[ch.parent_id] : undefined;
-    await discordRequest(`/guilds/${guildId}/channels`, {
+    const r = await discordRequest(`/guilds/${guildId}/channels`, {
       method: "POST",
       body: JSON.stringify({
         name: ch.name,
@@ -139,14 +167,21 @@ router.post("/bot/apply", requireAuth, async (req, res) => {
         ...(ch.topic ? { topic: ch.topic } : {}),
       }),
     });
-    await new Promise((resolve) => setTimeout(resolve, 300));
+    if (!r.ok) {
+      const body = await r.text().catch(() => "");
+      req.log.warn({ status: r.status, body, chName: ch.name }, "Failed to create channel");
+      errors.push(`فشل إنشاء قناة: ${ch.name}`);
+    }
+    await delay(50);
   }
 
-  await discordRequest(`/guilds/${guildId}/members/@me`, {
-    method: "DELETE",
-  });
+  // البوت يغادر السيرفر
+  await discordRequest(`/guilds/${guildId}/members/@me`, { method: "DELETE" });
 
-  res.json({ success: true });
+  res.json({
+    success: true,
+    ...(errors.length > 0 ? { warnings: errors } : {}),
+  });
 });
 
 export default router;
