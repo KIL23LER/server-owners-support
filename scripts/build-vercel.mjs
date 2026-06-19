@@ -2,6 +2,7 @@ import { cp, mkdir, writeFile, rm } from "node:fs/promises";
 import { execSync } from "node:child_process";
 import { build as esbuild } from "esbuild";
 import { createRequire } from "node:module";
+import esbuildPluginPino from "esbuild-plugin-pino";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -38,7 +39,9 @@ await esbuild({
   target: "node20",
   bundle: true,
   format: "esm",
-  outfile: path.join(funcDir, "index.mjs"),
+  outdir: funcDir,
+  outExtension: { ".js": ".mjs" },
+  entryNames: "index",
   logLevel: "warning",
   define: { "process.env.NODE_ENV": '"production"' },
   external: [
@@ -66,8 +69,9 @@ await esbuild({
     "puppeteer",
     "puppeteer-core",
     "playwright",
-    "pino-pretty",
-    "thread-stream",
+  ],
+  plugins: [
+    esbuildPluginPino({ transports: ["pino-pretty"] }),
   ],
   tsconfig: path.join(root, "artifacts/api-server/tsconfig.json"),
   banner: {
