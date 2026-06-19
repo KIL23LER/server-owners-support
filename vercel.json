@@ -1,6 +1,1 @@
-{
-  "outputDirectory": "artifacts/sos-website/dist/public",
-  "rewrites": [
-    { "source": "/((?!api/).*)", "destination": "/index.html" }
-  ]
-}
+{}
