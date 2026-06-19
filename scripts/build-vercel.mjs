@@ -32,14 +32,14 @@ console.log("⚡ Building serverless function...");
 const funcDir = path.join(output, "functions/api.func");
 await mkdir(funcDir, { recursive: true });
 
-await esbuild({
+const result = await esbuild({
   entryPoints: [path.join(root, "artifacts/api-server/src/serverless.ts")],
   platform: "node",
   target: "node20",
   bundle: true,
   format: "esm",
   outfile: path.join(funcDir, "index.mjs"),
-  logLevel: "error",
+  logLevel: "warning",
   define: {
     "process.env.NODE_ENV": '"production"',
   },
@@ -91,6 +91,11 @@ globalThis.__filename = __u.fileURLToPath(import.meta.url);
 globalThis.__dirname = __p.dirname(globalThis.__filename);`,
   },
 });
+
+if (result.warnings.length > 0) {
+  console.warn("⚠️  esbuild warnings:", result.warnings.map(w => w.text).join(", "));
+}
+console.log("✓ Serverless function built successfully");
 
 await writeFile(
   path.join(funcDir, ".vc-config.json"),
