@@ -2,7 +2,6 @@ import { cp, mkdir, rm } from "node:fs/promises";
 import { execSync } from "node:child_process";
 import { build as esbuild } from "esbuild";
 import { createRequire } from "node:module";
-import esbuildPluginPino from "esbuild-plugin-pino";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -29,28 +28,26 @@ await cp(
   { recursive: true }
 );
 
-console.log("⚡ Building API server...");
-const apiDist = path.join(root, "artifacts/api-server/dist");
-await mkdir(apiDist, { recursive: true });
+console.log("⚡ Building Cloudflare Pages Function...");
+const funcDir = path.join(root, "functions", "api");
+await mkdir(funcDir, { recursive: true });
 
 await esbuild({
-  entryPoints: [path.join(root, "artifacts/api-server/src/app.ts")],
+  entryPoints: [path.join(root, "artifacts/api-server/src/cf-handler.ts")],
   platform: "node",
   target: "node20",
   bundle: true,
   format: "esm",
-  outdir: apiDist,
-  entryNames: "app",
-  outExtension: { ".js": ".mjs" },
+  outfile: path.join(funcDir, "[[path]].js"),
   logLevel: "warning",
   define: { "process.env.NODE_ENV": '"production"' },
   external: [
     "*.node", "pg-native", "sharp", "canvas", "bcrypt", "argon2",
     "fsevents", "re2", "bufferutil", "utf-8-validate", "lightningcss",
     "oracledb", "better-sqlite3", "sqlite3", "dd-trace", "newrelic",
-    "snappy", "piscina", "electron", "puppeteer", "puppeteer-core", "playwright",
+    "snappy", "piscina", "electron", "puppeteer", "puppeteer-core",
+    "playwright", "pino-pretty", "thread-stream",
   ],
-  plugins: [esbuildPluginPino({ transports: ["pino-pretty"] })],
   tsconfig: path.join(root, "artifacts/api-server/tsconfig.json"),
   banner: {
     js: `import { createRequire as __cr } from 'node:module';
@@ -63,5 +60,5 @@ globalThis.__dirname = __p.dirname(globalThis.__filename);`,
 });
 
 console.log("✅ Cloudflare Pages build ready!");
-console.log("   Static files → dist/");
-console.log("   API server   → artifacts/api-server/dist/app.mjs");
+console.log("   Static files  → dist/");
+console.log("   CF Function   → functions/api/[[path]].js");
