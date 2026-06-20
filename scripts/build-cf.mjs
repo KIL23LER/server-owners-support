@@ -35,7 +35,9 @@ await cp(
 );
 
 console.log('Bundling _worker.js for Cloudflare Pages...');
-const apiServerReq = createRequire(path.join(root, 'artifacts/api-server/package.json'));
+// Load esbuild from api-server; resolve modules from api-server dir (absWorkingDir)
+const apiServerDir = path.join(root, 'artifacts/api-server');
+const apiServerReq = createRequire(path.join(apiServerDir, 'package.json'));
 const { build: esbuildBuild } = apiServerReq('esbuild');
 
 const NODE_BUILTINS = [
@@ -48,12 +50,13 @@ const NODE_BUILTINS = [
 ];
 
 await esbuildBuild({
-  entryPoints: [path.join(root, 'artifacts/api-server/worker.mjs')],
+  entryPoints: [path.join(apiServerDir, 'worker.mjs')],
   bundle: true,
   outfile: path.join(dist, '_worker.js'),
   format: 'esm',
   platform: 'neutral',
   target: 'es2022',
+  absWorkingDir: apiServerDir,
   alias: Object.fromEntries(NODE_BUILTINS.map(m => [m, 'node:' + m])),
   external: ['node:*'],
   define: { 'process.env.NODE_ENV': '"production"' },
