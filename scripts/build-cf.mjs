@@ -35,16 +35,29 @@ await cp(
 );
 
 console.log('Bundling _worker.js for Cloudflare Pages...');
-const esbuildBin = path.join(root, 'artifacts/api-server/node_modules/.bin/esbuild');
-const workerSrc  = path.join(root, 'artifacts/api-server/worker.mjs');
-const workerOut  = path.join(dist, '_worker.js');
+const apiServerReq = createRequire(path.join(root, 'artifacts/api-server/package.json'));
+const { build: esbuildBuild } = apiServerReq('esbuild');
 
-execSync(
-  `${esbuildBin} "${workerSrc}" --bundle --format=esm --platform=browser --target=es2022 --outfile="${workerOut}" --external:node:* --define:process.env.NODE_ENV=production --log-level=info`,
-  {
-    stdio: 'inherit',
-    cwd: path.join(root, 'artifacts/api-server'),
-  }
-);
+const NODE_BUILTINS = [
+  'assert', 'async_hooks', 'buffer', 'child_process', 'cluster', 'console',
+  'constants', 'crypto', 'dgram', 'dns', 'domain', 'events', 'fs', 'http',
+  'http2', 'https', 'inspector', 'module', 'net', 'os', 'path', 'perf_hooks',
+  'process', 'punycode', 'querystring', 'readline', 'repl', 'stream',
+  'string_decoder', 'sys', 'timers', 'tls', 'tty', 'url', 'util', 'v8', 'vm',
+  'wasi', 'worker_threads', 'zlib',
+];
+
+await esbuildBuild({
+  entryPoints: [path.join(root, 'artifacts/api-server/worker.mjs')],
+  bundle: true,
+  outfile: path.join(dist, '_worker.js'),
+  format: 'esm',
+  platform: 'neutral',
+  target: 'es2022',
+  alias: Object.fromEntries(NODE_BUILTINS.map(m => [m, 'node:' + m])),
+  external: ['node:*'],
+  define: { 'process.env.NODE_ENV': '"production"' },
+  logLevel: 'info',
+});
 
 console.log('Build ready!  Static: dist/   Worker: dist/_worker.js');
