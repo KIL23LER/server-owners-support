@@ -1,9 +1,7 @@
-import { cp, mkdir, rm, writeFile } from 'node:fs/promises';
-import { execSync, execFileSync } from 'node:child_process';
+import { cp, mkdir, rm } from 'node:fs/promises';
+import { execSync } from 'node:child_process';
 import { createRequire } from 'node:module';
-import { mkdtempSync } from 'node:fs';
 import path from 'node:path';
-import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 
 globalThis.require = createRequire(import.meta.url);
@@ -39,20 +37,6 @@ await cp(
 
 console.log('Bundling _worker.js for Cloudflare Pages...');
 const workerOut = path.join(dist, '_worker.js');
-
-// Create an isolated temp dir so esbuild can resolve serverless-http without
-// fighting pnpm workspace symlinks.
-const tmpDir = mkdtempSync(path.join(os.tmpdir(), 'worker-build-'));
-await cp(path.join(apiServerDir, 'worker.mjs'), path.join(tmpDir, 'worker.mjs'));
-await cp(path.join(apiServerDir, 'dist'), path.join(tmpDir, 'dist'), { recursive: true });
-await writeFile(
-  path.join(tmpDir, 'package.json'),
-  JSON.stringify({ type: 'module', dependencies: { 'serverless-http': '4.0.0' } })
-);
-
-console.log('Installing serverless-http in isolated dir...');
-execSync('npm install --prefer-offline', { stdio: 'inherit', cwd: tmpDir });
-
 const NODE_BUILTINS = [
   'assert','async_hooks','buffer','child_process','cluster','console',
   'constants','crypto','dgram','dns','domain','events','fs','http',
@@ -62,13 +46,13 @@ const NODE_BUILTINS = [
   'wasi','worker_threads','zlib',
 ];
 const aliasFlags = NODE_BUILTINS.map(m => '--alias:' + m + '=node:' + m);
-const esbuildBin = path.join(root, 'node_modules/.bin/esbuild');
 const esbuildArgs = [
-  esbuildBin,
+  './node_modules/.bin/esbuild',
   'worker.mjs',
   '--bundle',
   '--format=esm',
   '--platform=neutral',
+  '--main-fields=main,module,exports',
   '--target=es2022',
   '--outfile=' + workerOut,
   ...aliasFlags,
@@ -76,8 +60,6 @@ const esbuildArgs = [
   '--log-level=info',
 ].join(' ');
 
-execSync(esbuildArgs, { stdio: 'inherit', cwd: tmpDir });
-
-await rm(tmpDir, { recursive: true, force: true });
+execSync(esbuildArgs, { stdio: 'inherit', cwd: apiServerDir });
 
 console.log('Build ready!  Static: dist/   Worker: dist/_worker.js');
