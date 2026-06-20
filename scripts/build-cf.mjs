@@ -26,7 +26,7 @@ execSync('pnpm --filter @workspace/sos-website build', {
   env: { ...process.env, PORT: '3000', BASE_PATH: '/', NODE_ENV: 'production' },
 });
 
-console.log('Copying static files to dist/...');
+console.log('Copying static files...');
 await mkdir(dist, { recursive: true });
 await cp(
   path.join(root, 'artifacts/sos-website/dist/public'),
@@ -35,10 +35,6 @@ await cp(
 );
 
 console.log('Writing _redirects for SPA routing...');
-await writeFile(
-  path.join(dist, '_redirects'),
-  '/* /index.html 200
-'
-);
+await writeFile(path.join(dist, '_redirects'), '/* /index.html 200\n');
 
 console.log('Build ready! Static files -> dist/');
