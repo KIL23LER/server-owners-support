@@ -49,14 +49,6 @@ await esbuild({
     "playwright", "pino-pretty", "thread-stream",
   ],
   tsconfig: path.join(root, "artifacts/api-server/tsconfig.json"),
-  banner: {
-    js: `import { createRequire as __cr } from 'node:module';
-import __p from 'node:path';
-import __u from 'node:url';
-globalThis.require = __cr(import.meta.url);
-globalThis.__filename = __u.fileURLToPath(import.meta.url);
-globalThis.__dirname = __p.dirname(globalThis.__filename);`,
-  },
 });
 
 console.log("✅ Cloudflare Pages build ready!");
