@@ -48,39 +48,35 @@ export default defineConfig({
         warn(warning);
       },
       output: {
-        manualChunks: {
-          "vendor-react": ["react", "react-dom"],
-          "vendor-query": ["@tanstack/react-query"],
-          "vendor-i18n": ["i18next", "react-i18next", "i18next-browser-languagedetector"],
-          "vendor-radix": [
-            "@radix-ui/react-accordion",
-            "@radix-ui/react-alert-dialog",
-            "@radix-ui/react-avatar",
-            "@radix-ui/react-checkbox",
-            "@radix-ui/react-collapsible",
-            "@radix-ui/react-context-menu",
-            "@radix-ui/react-dialog",
-            "@radix-ui/react-dropdown-menu",
-            "@radix-ui/react-hover-card",
-            "@radix-ui/react-label",
-            "@radix-ui/react-menubar",
-            "@radix-ui/react-navigation-menu",
-            "@radix-ui/react-popover",
-            "@radix-ui/react-progress",
-            "@radix-ui/react-radio-group",
-            "@radix-ui/react-scroll-area",
-            "@radix-ui/react-select",
-            "@radix-ui/react-separator",
-            "@radix-ui/react-slider",
-            "@radix-ui/react-slot",
-            "@radix-ui/react-switch",
-            "@radix-ui/react-tabs",
-            "@radix-ui/react-toast",
-            "@radix-ui/react-toggle",
-            "@radix-ui/react-toggle-group",
-            "@radix-ui/react-tooltip",
-          ],
-          "vendor-misc": ["framer-motion", "react-hook-form", "wouter", "sonner", "lucide-react"],
+        manualChunks(id) {
+          if (!id.includes("node_modules")) return;
+          // React & ReactDOM MUST all land in one chunk to avoid duplicate React
+          if (
+            id.includes("/react-dom/") ||
+            id.includes("/react/") ||
+            id.includes("react-is") ||
+            id.includes("scheduler")
+          ) {
+            return "vendor-react";
+          }
+          if (id.includes("@tanstack/react-query")) return "vendor-query";
+          if (
+            id.includes("i18next") ||
+            id.includes("react-i18next") ||
+            id.includes("i18next-browser-languagedetector")
+          ) {
+            return "vendor-i18n";
+          }
+          if (id.includes("@radix-ui")) return "vendor-radix";
+          if (
+            id.includes("framer-motion") ||
+            id.includes("react-hook-form") ||
+            id.includes("/wouter/") ||
+            id.includes("/sonner/") ||
+            id.includes("lucide-react")
+          ) {
+            return "vendor-misc";
+          }
         },
       },
     },
