@@ -276,6 +276,48 @@ export default function TemplateCustomizer() {
           <p className="text-sm text-muted-foreground">اختر أحد قوالبنا لتعديل إيموجيات القنوات وألوان الرتب</p>
         </div>
 
+        {/* ── Bot Instructions Banner ─────────────────────────────── */}
+        <div className="mb-8 rounded-2xl border border-[#5865F2]/30 bg-[#5865F2]/5 p-5">
+          <div className="flex items-start gap-4">
+            <div className="w-10 h-10 rounded-xl bg-[#5865F2]/20 flex items-center justify-center shrink-0">
+              <Bot className="w-5 h-5 text-[#5865F2]" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h2 className="font-bold text-base mb-1">قبل اختيار القالب — أضف البوت أولاً</h2>
+              <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
+                بوت المجتمع يُطبّق القالب تلقائياً على سيرفرك ويبقى فيه.
+                أضفه الآن لسيرفرك ثم اختر القالب الذي يناسبك.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-2 mb-4">
+                {[
+                  { n: "١", label: "أضف البوت لسيرفرك", color: "#5865F2" },
+                  { n: "٢", label: "اختر قالباً وخصّصه", color: "#5865F2" },
+                  { n: "٣", label: "اختر سيرفرك — يُطبَّق تلقائياً ✨", color: "#22c55e" },
+                ].map((s) => (
+                  <div key={s.n} className="flex items-center gap-2 bg-background/70 rounded-lg px-3 py-2 border border-border/50 flex-1">
+                    <span
+                      className="w-5 h-5 rounded-full text-white text-[10px] font-bold flex items-center justify-center shrink-0"
+                      style={{ background: s.color }}
+                    >
+                      {s.n}
+                    </span>
+                    <span className="text-xs font-medium">{s.label}</span>
+                  </div>
+                ))}
+              </div>
+              <a
+                href={`https://discord.com/oauth2/authorize?client_id=${APP_ID}&permissions=8&scope=bot`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-xs font-bold text-[#5865F2] hover:underline"
+              >
+                <Bot className="w-3.5 h-3.5" />
+                أضف البوت الآن ←
+              </a>
+            </div>
+          </div>
+        </div>
+
         {templatesLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {Array.from({ length: 6 }).map((_, i) => (
@@ -670,12 +712,13 @@ function ApplyWithBot({
     ? `${BOT_INVITE}&guild_id=${selectedGuildId}&disable_guild_select=true`
     : BOT_INVITE;
 
-  const handleVerifyBot = async () => {
-    if (!selectedGuildId) return;
+  const handleVerifyBot = async (guildIdOverride?: string) => {
+    const gid = guildIdOverride ?? selectedGuildId;
+    if (!gid) return;
     setCheckingBot(true);
     setBotVerified(false);
     try {
-      const res = await fetch(`${BASE}/api/bot/check/${selectedGuildId}`, {
+      const res = await fetch(`${BASE}/api/bot/check/${gid}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem("sos_session")}` },
       });
       const data = await res.json();
@@ -683,7 +726,7 @@ function ApplyWithBot({
         setBotVerified(true);
         setBotAdded(true);
         toast({ title: "✅ تم التحقق", description: "البوت موجود في السيرفر، جاري تطبيق القالب تلقائياً..." });
-        handleApply();
+        handleApply(gid);
       } else {
         setBotVerified(false);
         toast({ variant: "destructive", title: "البوت غير موجود", description: "تأكد أنك أضفت البوت للسيرفر الصحيح ثم حاول مجدداً." });
@@ -695,14 +738,15 @@ function ApplyWithBot({
     }
   };
 
-  const handleApply = () => {
-    if (!selectedGuildId || !template) return;
+  const handleApply = (guildIdOverride?: string) => {
+    const gid = guildIdOverride ?? selectedGuildId;
+    if (!gid || !template) return;
     setApplyState("applying");
     setErrorMsg("");
     applyBot.mutate(
       {
         data: {
-          guildId: selectedGuildId,
+          guildId: gid,
           templateId: template.id,
           customizations: {
             channelEmojis: customization.channelEmojis,
@@ -790,7 +834,21 @@ function ApplyWithBot({
                           ? "border-[#5865F2] bg-[#5865F2]/10 text-[#5865F2] font-bold"
                           : "border-border/50 hover:border-[#5865F2]/40 bg-muted/30"
                       }`}
+                      onClick={() => {
+                        setSelectedGuildId(g.id);
+                        setBotAdded(false);
+                        setBotVerified(false);
+                        setApplyState("idle");
+                        setErrorMsg("");
+                        handleVerifyBot(g.id);
+                      }}
                     >
+                      {selectedGuildId === g.id && checkingBot && (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-[#5865F2] shrink-0" />
+                      )}
+                      {selectedGuildId === g.id && botVerified && (
+                        <Check className="w-3.5 h-3.5 text-green-500 shrink-0" />
+                      )}
                       {g.icon ? (
                         <img src={`https://cdn.discordapp.com/icons/${g.id}/${g.icon}.webp?size=32`} className="w-5 h-5 rounded-full" alt="" />
                       ) : (
