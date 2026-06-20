@@ -37,6 +37,7 @@ await cp(
 
 console.log('Bundling _worker.js for Cloudflare Pages...');
 const workerOut = path.join(dist, '_worker.js');
+const workerEntry = path.join(apiServerDir, 'worker.mjs');
 const NODE_BUILTINS = [
   'assert','async_hooks','buffer','child_process','cluster','console',
   'constants','crypto','dgram','dns','domain','events','fs','http',
@@ -47,8 +48,8 @@ const NODE_BUILTINS = [
 ];
 const aliasFlags = NODE_BUILTINS.map(m => '--alias:' + m + '=node:' + m);
 const esbuildArgs = [
-  './node_modules/.bin/esbuild',
-  'worker.mjs',
+  path.join(root, 'node_modules/.bin/esbuild'),
+  workerEntry,
   '--bundle',
   '--format=esm',
   '--platform=neutral',
@@ -59,6 +60,7 @@ const esbuildArgs = [
   '--log-level=info',
 ].join(' ');
 
-execSync(esbuildArgs, { stdio: 'inherit', cwd: apiServerDir });
+// Run from root so pnpm node_modules are reachable
+execSync(esbuildArgs, { stdio: 'inherit', cwd: root });
 
 console.log('Build ready!  Static: dist/   Worker: dist/_worker.js');
