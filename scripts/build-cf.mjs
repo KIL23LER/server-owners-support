@@ -1,6 +1,5 @@
 import { cp, mkdir, rm } from "node:fs/promises";
 import { execSync } from "node:child_process";
-import { build as esbuild } from "esbuild";
 import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -28,34 +27,4 @@ await cp(
   { recursive: true }
 );
 
-console.log("⚡ Building Cloudflare Pages Function...");
-const funcDir = path.join(root, "functions", "api");
-await mkdir(funcDir, { recursive: true });
-
-await esbuild({
-  entryPoints: [path.join(root, "artifacts/api-server/src/cf-handler.ts")],
-  platform: "node",
-  target: "node20",
-  bundle: true,
-  format: "esm",
-  outfile: path.join(funcDir, "[[path]].js"),
-  logLevel: "warning",
-  define: { "process.env.NODE_ENV": '"production"' },
-  external: [
-    "*.node", "pg-native", "sharp", "canvas", "bcrypt", "argon2",
-    "fsevents", "re2", "bufferutil", "utf-8-validate", "lightningcss",
-    "oracledb", "better-sqlite3", "sqlite3", "dd-trace", "newrelic",
-    "snappy", "piscina", "electron", "puppeteer", "puppeteer-core",
-    "playwright", "pino-pretty", "thread-stream",
-  ],
-  tsconfig: path.join(root, "artifacts/api-server/tsconfig.json"),
-  // Provide require() shim so CF Workers (with nodejs_compat) can resolve Node built-ins
-  banner: {
-    js: `import { createRequire as __createRequire } from "node:module";
-const require = __createRequire(import.meta.url ?? "file:///cf-worker");`,
-  },
-});
-
-console.log("✅ Cloudflare Pages build ready!");
-console.log("   Static files  → dist/");
-console.log("   CF Function   → functions/api/[[path]].js");
+console.log("✅ Build ready! Static files → dist/");
