@@ -49,6 +49,11 @@ await esbuild({
     "playwright", "pino-pretty", "thread-stream",
   ],
   tsconfig: path.join(root, "artifacts/api-server/tsconfig.json"),
+  // Provide require() shim so CF Workers (with nodejs_compat) can resolve Node built-ins
+  banner: {
+    js: `import { createRequire as __createRequire } from "node:module";
+const require = __createRequire(import.meta.url ?? "file:///cf-worker");`,
+  },
 });
 
 console.log("✅ Cloudflare Pages build ready!");
