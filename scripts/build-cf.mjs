@@ -8,6 +8,7 @@ globalThis.require = createRequire(import.meta.url);
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const dist = path.join(root, 'dist');
+const apiServerDir = path.join(root, 'artifacts/api-server');
 
 console.log('Cleaning previous output...');
 await rm(dist, { recursive: true, force: true });
@@ -35,32 +36,29 @@ await cp(
 );
 
 console.log('Bundling _worker.js for Cloudflare Pages...');
-// Load esbuild from api-server; resolve modules from api-server dir (absWorkingDir)
-const apiServerDir = path.join(root, 'artifacts/api-server');
-const apiServerReq = createRequire(path.join(apiServerDir, 'package.json'));
-const { build: esbuildBuild } = apiServerReq('esbuild');
-
+const workerOut = path.join(dist, '_worker.js');
 const NODE_BUILTINS = [
-  'assert', 'async_hooks', 'buffer', 'child_process', 'cluster', 'console',
-  'constants', 'crypto', 'dgram', 'dns', 'domain', 'events', 'fs', 'http',
-  'http2', 'https', 'inspector', 'module', 'net', 'os', 'path', 'perf_hooks',
-  'process', 'punycode', 'querystring', 'readline', 'repl', 'stream',
-  'string_decoder', 'sys', 'timers', 'tls', 'tty', 'url', 'util', 'v8', 'vm',
-  'wasi', 'worker_threads', 'zlib',
+  'assert','async_hooks','buffer','child_process','cluster','console',
+  'constants','crypto','dgram','dns','domain','events','fs','http',
+  'http2','https','inspector','module','net','os','path','perf_hooks',
+  'process','punycode','querystring','readline','repl','stream',
+  'string_decoder','sys','timers','tls','tty','url','util','v8','vm',
+  'wasi','worker_threads','zlib',
 ];
+const aliasFlags = NODE_BUILTINS.map(m => '--alias:' + m + '=node:' + m);
+const esbuildArgs = [
+  './node_modules/.bin/esbuild',
+  'worker.mjs',
+  '--bundle',
+  '--format=esm',
+  '--platform=neutral',
+  '--target=es2022',
+  '--outfile=' + workerOut,
+  ...aliasFlags,
+  '--external:node:*',
+  '--log-level=info',
+].join(' ');
 
-await esbuildBuild({
-  entryPoints: [path.join(apiServerDir, 'worker.mjs')],
-  bundle: true,
-  outfile: path.join(dist, '_worker.js'),
-  format: 'esm',
-  platform: 'neutral',
-  target: 'es2022',
-  absWorkingDir: apiServerDir,
-  alias: Object.fromEntries(NODE_BUILTINS.map(m => [m, 'node:' + m])),
-  external: ['node:*'],
-  define: { 'process.env.NODE_ENV': '"production"' },
-  logLevel: 'info',
-});
+execSync(esbuildArgs, { stdio: 'inherit', cwd: apiServerDir });
 
 console.log('Build ready!  Static: dist/   Worker: dist/_worker.js');
