@@ -9,7 +9,7 @@ const router = Router();
 
 const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID!;
 const DISCORD_CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET!;
-const REDIRECT_URI = process.env.DISCORD_REDIRECT_URI || "https://server-owners-support.vercel.app/api/auth/callback";
+const REDIRECT_URI = process.env.DISCORD_REDIRECT_URI || "https://server-owners-support.pages.dev/api/auth/callback";
 
 router.get("/auth/login", (req, res) => {
   const mobile = req.query.mobile === "true";
