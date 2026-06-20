@@ -1,4 +1,4 @@
-import { cp, mkdir, rm, writeFile } from 'node:fs/promises';
+import { cp, mkdir, rm } from 'node:fs/promises';
 import { execSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import path from 'node:path';
@@ -34,7 +34,17 @@ await cp(
   { recursive: true }
 );
 
-console.log('Writing _redirects for SPA routing...');
-await writeFile(path.join(dist, '_redirects'), '/* /index.html 200\n');
+console.log('Bundling _worker.js for Cloudflare Pages...');
+const esbuildBin = path.join(root, 'artifacts/api-server/node_modules/.bin/esbuild');
+const workerSrc  = path.join(root, 'artifacts/api-server/worker.mjs');
+const workerOut  = path.join(dist, '_worker.js');
 
-console.log('Build ready! Static files -> dist/');
+execSync(
+  `${esbuildBin} "${workerSrc}" --bundle --format=esm --platform=browser --target=es2022 --outfile="${workerOut}" --external:node:* --define:process.env.NODE_ENV=production --log-level=info`,
+  {
+    stdio: 'inherit',
+    cwd: path.join(root, 'artifacts/api-server'),
+  }
+);
+
+console.log('Build ready!  Static: dist/   Worker: dist/_worker.js');
