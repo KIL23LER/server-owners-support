@@ -682,7 +682,8 @@ function ApplyWithBot({
       if (data.present) {
         setBotVerified(true);
         setBotAdded(true);
-        toast({ title: "✅ تم التحقق", description: "البوت موجود في السيرفر وجاهز للتطبيق." });
+        toast({ title: "✅ تم التحقق", description: "البوت موجود في السيرفر، جاري تطبيق القالب تلقائياً..." });
+        handleApply();
       } else {
         setBotVerified(false);
         toast({ variant: "destructive", title: "البوت غير موجود", description: "تأكد أنك أضفت البوت للسيرفر الصحيح ثم حاول مجدداً." });
@@ -713,7 +714,7 @@ function ApplyWithBot({
       {
         onSuccess: () => {
           setApplyState("done");
-          toast({ title: "✅ تم تطبيق القالب!", description: "البوت طبّق القالب وغادر السيرفر تلقائياً." });
+          toast({ title: "✅ تم تطبيق القالب!", description: "البوت طبّق القالب وهو الآن موجود في سيرفرك." });
         },
         onError: (err: any) => {
           const msg = err?.response?.data?.error || err?.message || "حدث خطأ أثناء تطبيق القالب.";
@@ -741,8 +742,8 @@ function ApplyWithBot({
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {[
               { icon: <Users className="w-5 h-5 text-[#5865F2]" />, num: "١", title: "اختر سيرفرك", desc: "سجّل دخولك واختر السيرفر الذي تريد تطبيق القالب عليه.", done: !!selectedGuildId },
-              { icon: <Bot className="w-5 h-5 text-yellow-500" />, num: "٢", title: "أضف البوت وتحقق", desc: "أضف البوت للسيرفر المختار ثم اضغط «تحقق» للتأكد.", done: botVerified },
-              { icon: <Zap className="w-5 h-5 text-green-500" />, num: "٣", title: "طبّق القالب", desc: "اضغط تطبيق القالب — البوت ينشئ القنوات والرتب ثم يغادر تلقائياً.", done: applyState === "done" },
+              { icon: <Bot className="w-5 h-5 text-yellow-500" />, num: "٢", title: "أضف البوت وتحقق", desc: "أضف البوت للسيرفر المختار ثم اضغط «تحقق» — التطبيق يبدأ فوراً تلقائياً.", done: botVerified },
+              { icon: <Zap className="w-5 h-5 text-green-500" />, num: "٣", title: "تطبيق تلقائي", desc: "بعد التحقق، البوت يُطبّق القالب تلقائياً وينشئ القنوات والرتب ويبقى في السيرفر.", done: applyState === "done" },
             ].map((step) => (
               <div key={step.num} className={`relative rounded-xl p-4 border transition-colors ${step.done ? "border-green-500/40 bg-green-500/5" : "border-border/40 bg-muted/40"}`}>
                 <div className={`absolute -top-2.5 -right-2.5 w-6 h-6 rounded-full text-white text-[11px] font-bold flex items-center justify-center ${step.done ? "bg-green-500" : "bg-[#5865F2]"}`}>
@@ -852,24 +853,14 @@ function ApplyWithBot({
             </div>
           )}
 
-          {/* Step 3: Apply button */}
-          {selectedGuild && botVerified && applyState !== "done" && (
-            <div className="rounded-xl border border-green-500/30 bg-green-500/5 p-4 flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-              <div className="flex-1">
-                <p className="text-sm font-semibold text-green-700 dark:text-green-400">البوت جاهز — طبّق القالب الآن</p>
-                <p className="text-xs text-muted-foreground mt-0.5">سيُنشئ البوت القنوات والرتب بتخصيصاتك ثم يغادر تلقائياً</p>
+          {/* Step 3: Auto-applying indicator */}
+          {selectedGuild && botVerified && applyState === "applying" && (
+            <div className="rounded-xl border border-[#5865F2]/30 bg-[#5865F2]/5 p-4 flex items-center gap-3">
+              <Loader2 className="w-5 h-5 text-[#5865F2] animate-spin shrink-0" />
+              <div>
+                <p className="text-sm font-semibold text-[#5865F2]">جاري تطبيق القالب تلقائياً...</p>
+                <p className="text-xs text-muted-foreground mt-0.5">البوت ينشئ القنوات والرتب، يرجى الانتظار</p>
               </div>
-              <Button
-                onClick={handleApply}
-                disabled={applyState === "applying"}
-                className="bg-green-600 hover:bg-green-700 text-white font-bold gap-2 whitespace-nowrap"
-              >
-                {applyState === "applying" ? (
-                  <><Loader2 className="w-4 h-4 animate-spin" /> جاري التطبيق...</>
-                ) : (
-                  <><Zap className="w-4 h-4" /> تطبيق القالب</>
-                )}
-              </Button>
             </div>
           )}
 
@@ -905,14 +896,14 @@ function ApplyWithBot({
               </div>
               <div>
                 <p className="text-sm font-bold text-green-700 dark:text-green-400">تم تطبيق القالب بنجاح! 🎉</p>
-                <p className="text-xs text-muted-foreground">البوت أنشأ القنوات والرتب وغادر السيرفر تلقائياً.</p>
+                <p className="text-xs text-muted-foreground">البوت أنشأ القنوات والرتب وهو الآن موجود في سيرفرك.</p>
               </div>
             </div>
           )}
 
           <div className="flex items-center gap-2 text-xs text-muted-foreground pt-1">
             <ShieldCheck className="w-4 h-4 text-green-500 shrink-0" />
-            <span>البوت يغادر تلقائياً بعد التطبيق — لا يبقى في سيرفرك</span>
+            <span>البوت يبقى في سيرفرك بعد تطبيق القالب</span>
           </div>
         </div>
       </div>
