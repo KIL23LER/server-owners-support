@@ -1,5 +1,5 @@
 import { cp, mkdir, rm } from 'node:fs/promises';
-import { execSync } from 'node:child_process';
+import { execSync, execFileSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -46,20 +46,23 @@ const NODE_BUILTINS = [
   'wasi','worker_threads','zlib',
 ];
 const aliasFlags = NODE_BUILTINS.map(m => '--alias:' + m + '=node:' + m);
+
+const requireBanner = 'import { createRequire as __cfCreateRequire } from "node:module"; const require = __cfCreateRequire(import.meta.url);';
+
 const esbuildArgs = [
-  './node_modules/.bin/esbuild',
   'worker.mjs',
   '--bundle',
   '--format=esm',
   '--platform=neutral',
   '--main-fields=main,module,exports',
   '--target=es2022',
+  `--banner:js=${requireBanner}`,
   '--outfile=' + workerOut,
   ...aliasFlags,
   '--external:node:*',
   '--log-level=info',
-].join(' ');
+];
 
-execSync(esbuildArgs, { stdio: 'inherit', cwd: apiServerDir });
+execFileSync('./node_modules/.bin/esbuild', esbuildArgs, { stdio: 'inherit', cwd: apiServerDir });
 
 console.log('Build ready!  Static: dist/   Worker: dist/_worker.js');
