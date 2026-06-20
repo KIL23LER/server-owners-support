@@ -39,7 +39,9 @@ await esbuild({
   target: "node20",
   bundle: true,
   format: "esm",
-  outfile: path.join(apiDist, "app.mjs"),
+  outdir: apiDist,
+  entryNames: "app",
+  outExtension: { ".js": ".mjs" },
   logLevel: "warning",
   define: { "process.env.NODE_ENV": '"production"' },
   external: [
