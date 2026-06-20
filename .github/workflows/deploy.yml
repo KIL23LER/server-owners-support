@@ -34,7 +34,7 @@ jobs:
           NODE_ENV: production
 
       - name: Deploy to Cloudflare Pages
-        run: npx wrangler pages deploy dist --project-name=server-owners-support --branch=main --compatibility-flags=nodejs_compat --compatibility-date=2024-09-23
+        run: npx wrangler pages deploy dist --project-name=server-owners-support --branch=main
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
