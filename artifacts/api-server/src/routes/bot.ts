@@ -219,9 +219,6 @@ router.post("/bot/apply", requireAuth, async (req, res) => {
     await delay(50);
   }
 
-  // البوت يغادر السيرفر
-  await discordRequest(`/guilds/${guildId}/members/@me`, { method: "DELETE" });
-
   res.json({
     success: true,
     ...(errors.length > 0 ? { warnings: errors } : {}),
